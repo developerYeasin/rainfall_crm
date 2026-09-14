@@ -13,6 +13,7 @@ import { Loading, ErrorState } from '@/components/ui/States.jsx';
 import { ROLE_LABEL } from '@/lib/status.js';
 import { dateLabel } from '@/lib/format.js';
 import { useAuth } from '@/features/auth/AuthContext.jsx';
+import { t } from '@/i18n/index.jsx';
 
 const ROLE_OPTIONS = Object.entries(ROLE_LABEL).map(([value, label]) => ({ value, label }));
 
@@ -96,7 +97,7 @@ export const UsersPage = () => {
   const create = useMutation({
     mutationFn: authApi.register,
     onSuccess: () => {
-      toast.success('টিম মেম্বার তৈরি হয়েছে');
+      toast.success(t('টিম মেম্বার তৈরি হয়েছে'));
       invalidate();
       setCreating(false);
     },
@@ -106,7 +107,7 @@ export const UsersPage = () => {
   const changeRole = useMutation({
     mutationFn: ({ id, role }) => usersApi.update({ id, role }),
     onSuccess: () => {
-      toast.success('রোল আপডেট হয়েছে');
+      toast.success(t('রোল আপডেট হয়েছে'));
       invalidate();
     },
     onError: (err) => toast.error(err.message),
@@ -115,7 +116,7 @@ export const UsersPage = () => {
   const deactivate = useMutation({
     mutationFn: usersApi.deactivate,
     onSuccess: () => {
-      toast.success('অ্যাকাউন্ট নিষ্ক্রিয় হয়েছে');
+      toast.success(t('অ্যাকাউন্ট নিষ্ক্রিয় হয়েছে'));
       invalidate();
     },
     onError: (err) => toast.error(err.message),
@@ -177,7 +178,7 @@ export const UsersPage = () => {
             size="sm"
             variant="ghost"
             className="text-rose-600"
-            onClick={() => window.confirm('এই অ্যাকাউন্ট নিষ্ক্রিয় করবেন?') && deactivate.mutate(row.id)}
+            onClick={() => window.confirm(t('এই অ্যাকাউন্ট নিষ্ক্রিয় করবেন?')) && deactivate.mutate(row.id)}
           >
             নিষ্ক্রিয় করুন
           </Button>

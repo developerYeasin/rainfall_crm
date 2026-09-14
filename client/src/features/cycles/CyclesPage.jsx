@@ -10,6 +10,7 @@ import { Select } from '@/components/ui/Field.jsx';
 import { Loading, ErrorState } from '@/components/ui/States.jsx';
 import { CYCLE_STATUS_LABEL } from '@/lib/status.js';
 import { currency, dateLabel } from '@/lib/format.js';
+import { tData } from '@/i18n/index.jsx';
 
 const STATUS_OPTIONS = Object.entries(CYCLE_STATUS_LABEL).map(([value, label]) => ({ value, label }));
 
@@ -26,7 +27,7 @@ export const CyclesPage = () => {
       header: 'সাইকেল',
       render: (row) => (
         <Link to={`/cycles/${row.id}`} className="font-medium text-brand-700 hover:underline">
-          {row.name}
+          {tData(row.name)}
         </Link>
       ),
     },

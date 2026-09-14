@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { t } from '@/i18n/index.jsx';
 
 const BASE_URL = import.meta.env.VITE_API_URL || '/api/v1';
 
@@ -54,7 +55,7 @@ api.interceptors.response.use(
       }
     }
 
-    const message = error.response?.data?.message || error.message || 'সার্ভার এরর';
+    const message = t(error.response?.data?.message || error.message || 'সার্ভার এরর');
     return Promise.reject(Object.assign(new Error(message), { details: error.response?.data?.details, status }));
   },
 );

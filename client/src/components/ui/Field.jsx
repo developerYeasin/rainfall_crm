@@ -1,33 +1,37 @@
 import clsx from 'clsx';
+import { t } from '@/i18n/index.jsx';
 
 export const Field = ({ label, error, hint, className, children }) => (
   <div className={className}>
-    {label && <label className="label">{label}</label>}
+    {label && <label className="label">{t(label)}</label>}
     {children}
-    {error && <p className="mt-1 text-xs text-rose-600">{error}</p>}
-    {!error && hint && <p className="mt-1 text-xs text-slate-500">{hint}</p>}
+    {error && <p className="mt-1 text-xs text-rose-600">{t(error)}</p>}
+    {!error && hint && <p className="mt-1 text-xs text-slate-500">{t(hint)}</p>}
   </div>
 );
 
-export const Input = ({ className, ...props }) => <input className={clsx('input', className)} {...props} />;
+export const Input = ({ className, placeholder, ...props }) => (
+  <input className={clsx('input', className)} placeholder={t(placeholder)} {...props} />
+);
 
+/** String options keep their raw value (often stored Bangla) and show a translated label. */
 export const Select = ({ className, options = [], placeholder, ...props }) => (
-  <select className={clsx('input', className)} {...props}>
-    {placeholder && <option value="">{placeholder}</option>}
+  <select className={clsx('input pr-8', className)} {...props}>
+    {placeholder && <option value="">{t(placeholder)}</option>}
     {options.map((opt) => {
       const value = typeof opt === 'string' ? opt : opt.value;
       const label = typeof opt === 'string' ? opt : opt.label;
       return (
         <option key={value} value={value}>
-          {label}
+          {t(label)}
         </option>
       );
     })}
   </select>
 );
 
-export const Textarea = ({ className, ...props }) => (
-  <textarea rows={3} className={clsx('input resize-y', className)} {...props} />
+export const Textarea = ({ className, placeholder, ...props }) => (
+  <textarea rows={3} className={clsx('input resize-y', className)} placeholder={t(placeholder)} {...props} />
 );
 
 export const Checkbox = ({ label, className, ...props }) => (
@@ -37,6 +41,6 @@ export const Checkbox = ({ label, className, ...props }) => (
       className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-200"
       {...props}
     />
-    {label}
+    {t(label)}
   </label>
 );

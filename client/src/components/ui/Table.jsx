@@ -1,3 +1,5 @@
+import { t, tData } from '@/i18n/index.jsx';
+
 export const Table = ({
   columns,
   rows,
@@ -13,7 +15,7 @@ export const Table = ({
         <tr>
           {columns.map((col) => (
             <th key={col.key} className={col.align === 'right' ? 'text-right' : undefined}>
-              {col.header}
+              {t(col.header)}
             </th>
           ))}
         </tr>
@@ -21,8 +23,8 @@ export const Table = ({
       <tbody>
         {rows.length === 0 ? (
           <tr>
-            <td colSpan={columns.length} className="py-10 text-center text-slate-500">
-              {empty}
+            <td colSpan={columns.length} className="py-12 text-center text-slate-500">
+              {t(empty)}
             </td>
           </tr>
         ) : (
@@ -30,7 +32,8 @@ export const Table = ({
             <tr key={rowKey(row, index)}>
               {columns.map((col) => (
                 <td key={col.key} className={col.align === 'right' ? 'text-right' : undefined}>
-                  {col.render ? col.render(row, index) : row[col.key]}
+                  {/* `label` cells hold server-built names like "সপ্তাহ ১". */}
+                  {col.render ? col.render(row, index) : col.key === 'label' ? tData(row[col.key]) : row[col.key]}
                 </td>
               ))}
             </tr>
@@ -42,7 +45,7 @@ export const Table = ({
           <tr>
             {columns.map((col) => (
               <td key={col.key} className={col.align === 'right' ? 'text-right' : undefined}>
-                {footer[col.key] ?? ''}
+                {tData(t(footer[col.key] ?? ''))}
               </td>
             ))}
           </tr>

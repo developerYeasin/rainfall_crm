@@ -17,6 +17,7 @@ import { Badge } from '@/components/ui/Badge.jsx';
 import { Loading, ErrorState } from '@/components/ui/States.jsx';
 import { currency, percent, roas } from '@/lib/format.js';
 import { WEEK_STATUS_TONE } from '@/lib/status.js';
+import { t, tData } from '@/i18n/index.jsx';
 
 export const ControlTab = () => {
   const { cycle } = useOutletContext();
@@ -67,7 +68,7 @@ export const ControlTab = () => {
   };
 
   const chartData = data.weeks.map((w) => ({
-    name: w.label,
+    name: tData(w.label),
     target: w.target_revenue,
     actual: w.actual_revenue,
   }));
@@ -95,8 +96,8 @@ export const ControlTab = () => {
                 />
                 <Tooltip formatter={(v) => currency(v)} />
                 <Legend />
-                <Bar dataKey="target" name="টার্গেট" fill="#94a3b8" radius={[4, 4, 0, 0]} isAnimationActive={false} />
-                <Bar dataKey="actual" name="রিয়েল" fill="#3182f6" radius={[4, 4, 0, 0]} isAnimationActive={false} />
+                <Bar dataKey="target" name={t('টার্গেট')} fill="#94a3b8" radius={[4, 4, 0, 0]} isAnimationActive={false} />
+                <Bar dataKey="actual" name={t('রিয়েল')} fill="#3182f6" radius={[4, 4, 0, 0]} isAnimationActive={false} />
               </BarChart>
             </ResponsiveContainer>
           </div>

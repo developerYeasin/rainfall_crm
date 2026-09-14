@@ -3,6 +3,7 @@ import { Modal } from '@/components/ui/Modal.jsx';
 import { Button } from '@/components/ui/Button.jsx';
 import { Field, Input, Select, Textarea } from '@/components/ui/Field.jsx';
 import { currency, roas } from '@/lib/format.js';
+import { t } from '@/i18n/index.jsx';
 
 const PLATFORMS = ['Facebook', 'Instagram', 'Google', 'TikTok', 'YouTube', 'LinkedIn', 'Other'];
 
@@ -41,7 +42,7 @@ export const PerformanceForm = ({ open, onClose, onSubmit, initial, saving, cycl
 
   const weekOptions = Array.from({ length: cycle.weeks_count }, (_, i) => ({
     value: String(i + 1),
-    label: `সপ্তাহ ${i + 1}`,
+    label: t('সপ্তাহ {n}', { n: i + 1 }),
   }));
 
   return (

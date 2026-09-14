@@ -14,6 +14,7 @@ import { ClientForm } from './ClientForm.jsx';
 import { CLIENT_STATUS_LABEL, CLIENT_STATUS_TONE } from '@/lib/status.js';
 import { currency, dateLabel, number } from '@/lib/format.js';
 import { useAuth } from '@/features/auth/AuthContext.jsx';
+import { t } from '@/i18n/index.jsx';
 
 const STATUS_OPTIONS = Object.entries(CLIENT_STATUS_LABEL).map(([value, label]) => ({ value, label }));
 
@@ -36,7 +37,7 @@ export const ClientsPage = () => {
   const save = useMutation({
     mutationFn: (payload) => (payload.id ? clientsApi.update(payload) : clientsApi.create(payload)),
     onSuccess: () => {
-      toast.success('ক্লায়েন্ট সংরক্ষিত হয়েছে');
+      toast.success(t('ক্লায়েন্ট সংরক্ষিত হয়েছে'));
       qc.invalidateQueries({ queryKey: ['clients'] });
       setEditing(null);
     },
@@ -46,14 +47,14 @@ export const ClientsPage = () => {
   const remove = useMutation({
     mutationFn: clientsApi.remove,
     onSuccess: () => {
-      toast.success('ক্লায়েন্ট মুছে ফেলা হয়েছে');
+      toast.success(t('ক্লায়েন্ট মুছে ফেলা হয়েছে'));
       qc.invalidateQueries({ queryKey: ['clients'] });
     },
     onError: (err) => toast.error(err.message),
   });
 
   const confirmRemove = (row) => {
-    const message = 'এই ক্লায়েন্ট মুছে ফেলবেন? সব সাইকেল ও ডেটাও মুছে যাবে: ' + row.name;
+    const message = t('এই ক্লায়েন্ট মুছে ফেলবেন? সব সাইকেল ও ডেটাও মুছে যাবে: {name}', { name: row.name });
     if (window.confirm(message)) remove.mutate(row.id);
   };
 

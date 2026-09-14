@@ -13,6 +13,7 @@ import { Field, Input, Select, Checkbox } from '@/components/ui/Field.jsx';
 import { Loading, ErrorState } from '@/components/ui/States.jsx';
 import { currency, number, dateLabel, today } from '@/lib/format.js';
 import { STOCK_STATUS } from '@/lib/status.js';
+import { t } from '@/i18n/index.jsx';
 
 const ProductForm = ({ initial, saving, onClose, onSubmit }) => {
   const [form, setForm] = useState({
@@ -125,7 +126,7 @@ const PurchaseForm = ({ products, saving, onClose, onSubmit }) => {
               const next = products.find((p) => p.id === Number(e.target.value));
               setForm({ ...form, product_id: e.target.value, unit_cost: next?.cost_price ?? '' });
             }}
-            options={products.map((p) => ({ value: p.id, label: `${p.name} (স্টক ${p.in_stock})` }))}
+            options={products.map((p) => ({ value: p.id, label: t('{name} (স্টক {n})', { name: p.name, n: p.in_stock }) }))}
           />
         </Field>
         <div className="grid grid-cols-2 gap-4">
@@ -144,8 +145,10 @@ const PurchaseForm = ({ products, saving, onClose, onSubmit }) => {
         </div>
         {product && form.qty && (
           <p className="rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-600">
-            মোট খরচ {currency(Number(form.qty) * Number(form.unit_cost || 0))} · নতুন স্টক হবে{' '}
-            {number(product.in_stock + Number(form.qty))} পিস
+            {t('মোট খরচ {cost} · নতুন স্টক হবে {n} পিস', {
+              cost: currency(Number(form.qty) * Number(form.unit_cost || 0)),
+              n: number(product.in_stock + Number(form.qty)),
+            })}
           </p>
         )}
       </div>
@@ -169,7 +172,7 @@ export const StockTab = () => {
   });
 
   const onDone = (message) => () => {
-    toast.success(message);
+    toast.success(t(message));
     qc.invalidateQueries({ queryKey: ['business', clientId] });
     setEditing(null);
     setAddingStock(false);
@@ -262,7 +265,7 @@ export const StockTab = () => {
                   size="sm"
                   variant="ghost"
                   className="text-rose-600"
-                  onClick={() => window.confirm(`"${r.name}" মুছে ফেলবেন?`) && removeProduct.mutate(r.id)}
+                  onClick={() => window.confirm(t('"{name}" মুছে ফেলবেন?', { name: r.name })) && removeProduct.mutate(r.id)}
                 >
                   মুছুন
                 </Button>
@@ -291,7 +294,7 @@ export const StockTab = () => {
                 size="sm"
                 variant="ghost"
                 className="text-rose-600"
-                onClick={() => window.confirm('এই স্টক এন্ট্রি মুছবেন?') && removePurchase.mutate(r.id)}
+                onClick={() => window.confirm(t('এই স্টক এন্ট্রি মুছবেন?')) && removePurchase.mutate(r.id)}
               >
                 মুছুন
               </Button>
@@ -304,10 +307,14 @@ export const StockTab = () => {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <StatTile label="মোট স্টক" value={`${number(totals.units)} পিস`} hint={`${number(active.length)} সক্রিয় প্রোডাক্ট`} />
+        <StatTile
+          label="মোট স্টক"
+          value={t('{n} পিস', { n: number(totals.units) })}
+          hint={t('{n} সক্রিয় প্রোডাক্ট', { n: number(active.length) })}
+        />
         <StatTile label="স্টকের মূল্য" value={currency(totals.value)} hint="কেনা দামে" />
-        <StatTile label="মোট সেল হয়েছে" value={`${number(totals.sold)} পিস`} hint="শুরু থেকে" />
-        <StatTile label="অপেক্ষমাণ প্রি-অর্ডার" value={`${number(totals.pre)} পিস`} />
+        <StatTile label="মোট সেল হয়েছে" value={t('{n} পিস', { n: number(totals.sold) })} hint="শুরু থেকে" />
+        <StatTile label="অপেক্ষমাণ প্রি-অর্ডার" value={t('{n} পিস', { n: number(totals.pre) })} />
       </div>
 
       <Card>

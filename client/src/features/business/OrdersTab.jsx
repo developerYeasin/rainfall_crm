@@ -13,8 +13,14 @@ import { Field, Input, Select, Textarea } from '@/components/ui/Field.jsx';
 import { Loading, ErrorState } from '@/components/ui/States.jsx';
 import { currency, number, dateLabel, today } from '@/lib/format.js';
 import { ORDER_STATUS_LABEL, ORDER_STATUS_TONE } from '@/lib/status.js';
+import { t } from '@/i18n/index.jsx';
 
-const STATUS_OPTIONS = Object.entries(ORDER_STATUS_LABEL).map(([value, label]) => ({ value, label }));
+const STATUS_OPTIONS = Object.keys(ORDER_STATUS_LABEL).map((value) => ({
+  value,
+  get label() {
+    return ORDER_STATUS_LABEL[value];
+  },
+}));
 const PAGE_SIZE = 50;
 
 const OrderForm = ({ initial, products, saving, onClose, onSubmit }) => {
@@ -73,7 +79,7 @@ const OrderForm = ({ initial, products, saving, onClose, onSubmit }) => {
               const next = products.find((p) => p.id === Number(e.target.value));
               setForm({ ...form, product_id: e.target.value, unit_price: next?.sale_price ?? form.unit_price });
             }}
-            options={products.map((p) => ({ value: p.id, label: `${p.name} — স্টক ${p.in_stock}` }))}
+            options={products.map((p) => ({ value: p.id, label: t('{name} — স্টক {n}', { name: p.name, n: p.in_stock }) }))}
           />
         </Field>
         <Field label="স্ট্যাটাস">
@@ -111,15 +117,15 @@ const OrderForm = ({ initial, products, saving, onClose, onSubmit }) => {
 
         <div className="sm:col-span-3 grid grid-cols-3 gap-3 rounded-lg bg-slate-50 p-3 text-sm">
           <div>
-            <p className="text-xs text-slate-500">মোট</p>
+            <p className="text-xs text-slate-500">{t('মোট')}</p>
             <p className="font-semibold text-slate-900">{currency(amount)}</p>
           </div>
           <div>
-            <p className="text-xs text-slate-500">বাকি</p>
+            <p className="text-xs text-slate-500">{t('বাকি')}</p>
             <p className={clsx('font-semibold', due > 0 ? 'text-rose-600' : 'text-slate-900')}>{currency(Math.max(due, 0))}</p>
           </div>
           <div>
-            <p className="text-xs text-slate-500">আনুমানিক লাভ</p>
+            <p className="text-xs text-slate-500">{t('আনুমানিক লাভ')}</p>
             <p className="font-semibold text-slate-900">
               {product ? currency(amount - Number(form.qty || 0) * Number(product.cost_price)) : '—'}
             </p>
@@ -156,7 +162,7 @@ export const OrdersTab = () => {
     mutationFn: (payload) =>
       payload.id ? businessApi.updateOrder(clientId, payload) : businessApi.createOrder(clientId, payload),
     onSuccess: () => {
-      toast.success('অর্ডার সংরক্ষিত হয়েছে');
+      toast.success(t('অর্ডার সংরক্ষিত হয়েছে'));
       invalidate();
       setEditing(null);
     },
@@ -165,7 +171,7 @@ export const OrdersTab = () => {
   const changeStatus = useMutation({
     mutationFn: ({ id, status: next }) => businessApi.updateOrder(clientId, { id, status: next }),
     onSuccess: () => {
-      toast.success('স্ট্যাটাস আপডেট হয়েছে');
+      toast.success(t('স্ট্যাটাস আপডেট হয়েছে'));
       invalidate();
     },
     onError,
@@ -173,7 +179,7 @@ export const OrdersTab = () => {
   const remove = useMutation({
     mutationFn: (id) => businessApi.removeOrder(clientId, id),
     onSuccess: () => {
-      toast.success('অর্ডার মুছে ফেলা হয়েছে');
+      toast.success(t('অর্ডার মুছে ফেলা হয়েছে'));
       invalidate();
     },
     onError,
@@ -254,7 +260,7 @@ export const OrdersTab = () => {
                   size="sm"
                   variant="ghost"
                   className="text-rose-600"
-                  onClick={() => window.confirm('এই অর্ডার মুছবেন?') && remove.mutate(r.id)}
+                  onClick={() => window.confirm(t('এই অর্ডার মুছবেন?')) && remove.mutate(r.id)}
                 >
                   মুছুন
                 </Button>
@@ -284,8 +290,8 @@ export const OrdersTab = () => {
                 : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50',
             )}
           >
-            {chip.label} <span className="ml-1 font-semibold">{number(chip.count)}</span>
-            {chip.qty ? <span className="ml-1 text-xs text-slate-400">({number(chip.qty)} পিস)</span> : null}
+            {t(chip.label)} <span className="ml-1 font-semibold">{number(chip.count)}</span>
+            {chip.qty ? <span className="ml-1 text-xs text-slate-400">{t('({n} পিস)', { n: number(chip.qty) })}</span> : null}
           </button>
         ))}
       </div>
@@ -293,7 +299,7 @@ export const OrdersTab = () => {
       <Card>
         <CardHeader
           title="সেল ও প্রি-অর্ডার"
-          subtitle={`${number(meta.total)} টি অর্ডার`}
+          subtitle={t('{n} টি অর্ডার', { n: number(meta.total) })}
           actions={
             <>
               <Input
@@ -316,7 +322,7 @@ export const OrdersTab = () => {
         <Table columns={columns} rows={rows} empty="কোনো অর্ডার নেই" />
         {meta.pages > 1 && (
           <div className="flex items-center justify-end gap-2 border-t border-slate-100 px-5 py-3 text-sm text-slate-500">
-            পৃষ্ঠা {page} / {meta.pages}
+            {t('পৃষ্ঠা {page} / {pages}', { page, pages: meta.pages })}
             <Button size="sm" variant="secondary" disabled={page <= 1} onClick={() => setPage(page - 1)}>
               আগের
             </Button>
@@ -328,7 +334,7 @@ export const OrdersTab = () => {
       </Card>
 
       {!products.isLoading && !activeProducts.length && canWrite && (
-        <p className="text-sm text-slate-500">অর্ডার নিতে আগে "প্রোডাক্ট ও স্টক" ট্যাবে প্রোডাক্ট যোগ করুন।</p>
+        <p className="text-sm text-slate-500">{t('অর্ডার নিতে আগে "প্রোডাক্ট ও স্টক" ট্যাবে প্রোডাক্ট যোগ করুন।')}</p>
       )}
 
       {editing && (

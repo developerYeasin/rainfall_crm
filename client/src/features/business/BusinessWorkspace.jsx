@@ -9,6 +9,7 @@ import { Loading, ErrorState } from '@/components/ui/States.jsx';
 import { useAuth } from '@/features/auth/AuthContext.jsx';
 import { BUSINESS_WRITE_ROLES } from '@/lib/status.js';
 import { RANGE_OPTIONS, rangeFor } from './range.js';
+import { t } from '@/i18n/index.jsx';
 
 const TABS = [
   { to: '', label: 'সামারি', end: true },
@@ -47,7 +48,7 @@ export const BusinessWorkspace = () => {
             </Link>
           )
         }
-        title={isClient ? `${data.name} — আমার ব্যবসা` : 'ব্যবসার হিসাব'}
+        title={isClient ? t('{name} — আমার ব্যবসা', { name: data.name }) : 'ব্যবসার হিসাব'}
         subtitle={data.company || 'সেল, স্টক, প্রি-অর্ডার, মার্কেটিং খরচ ও প্রফিট — সব এক জায়গায়'}
         actions={
           <Select
@@ -75,7 +76,7 @@ export const BusinessWorkspace = () => {
                 )
               }
             >
-              {tab.label}
+              {t(tab.label)}
             </NavLink>
           ))}
         </nav>

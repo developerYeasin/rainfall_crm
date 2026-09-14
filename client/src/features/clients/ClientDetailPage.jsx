@@ -13,10 +13,11 @@ import { CycleForm } from '@/features/cycles/CycleForm.jsx';
 import { CLIENT_STATUS_LABEL, CLIENT_STATUS_TONE, CYCLE_STATUS_LABEL } from '@/lib/status.js';
 import { currency, dateLabel } from '@/lib/format.js';
 import { useAuth } from '@/features/auth/AuthContext.jsx';
+import { t, tData } from '@/i18n/index.jsx';
 
 const Detail = ({ label, value }) => (
   <div>
-    <p className="text-xs uppercase tracking-wide text-slate-500">{label}</p>
+    <p className="text-xs text-slate-500">{t(label)}</p>
     <p className="mt-0.5 text-sm font-medium text-slate-800">{value || '—'}</p>
   </div>
 );
@@ -36,7 +37,7 @@ export const ClientDetailPage = () => {
   const createCycle = useMutation({
     mutationFn: (payload) => cyclesApi.create({ ...payload, client_id: Number(id) }),
     onSuccess: () => {
-      toast.success('সাইকেল তৈরি হয়েছে');
+      toast.success(t('সাইকেল তৈরি হয়েছে'));
       qc.invalidateQueries({ queryKey: ['clients', id] });
       setCreating(false);
     },
@@ -52,7 +53,7 @@ export const ClientDetailPage = () => {
       header: 'সাইকেল',
       render: (row) => (
         <Link to={`/cycles/${row.id}`} className="font-medium text-brand-700 hover:underline">
-          {row.name}
+          {tData(row.name)}
         </Link>
       ),
     },
@@ -75,7 +76,7 @@ export const ClientDetailPage = () => {
       <PageHeader
         breadcrumb={
           <Link to="/clients" className="hover:underline">
-            ক্লায়েন্ট
+            {t('ক্লায়েন্ট')}
           </Link>
         }
         title={data.name}
@@ -110,7 +111,7 @@ export const ClientDetailPage = () => {
         <Card>
           <CardHeader title="নোট" />
           <CardBody>
-            <p className="whitespace-pre-wrap text-sm text-slate-600">{data.notes || 'কোনো নোট নেই'}</p>
+            <p className="whitespace-pre-wrap text-sm text-slate-600">{data.notes || t('কোনো নোট নেই')}</p>
           </CardBody>
         </Card>
       </div>

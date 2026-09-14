@@ -12,6 +12,7 @@ import { StatTile } from '@/components/ui/StatTile.jsx';
 import { TaskForm, CHECKS } from './TaskForm.jsx';
 import { dateLabel, percent, number } from '@/lib/format.js';
 import { useAuth } from '@/features/auth/AuthContext.jsx';
+import { t } from '@/i18n/index.jsx';
 
 const scoreTone = (score) => (score === 4 ? 'success' : score >= 2 ? 'warning' : 'danger');
 
@@ -35,7 +36,7 @@ export const TasksTab = () => {
     mutationFn: (payload) =>
       payload.id ? tasksApi.update(payload) : tasksApi.create({ ...payload, cycle_id: cycle.id }),
     onSuccess: () => {
-      toast.success('টাস্ক সংরক্ষিত হয়েছে');
+      toast.success(t('টাস্ক সংরক্ষিত হয়েছে'));
       invalidate();
       setEditing(null);
     },
@@ -51,7 +52,7 @@ export const TasksTab = () => {
   const remove = useMutation({
     mutationFn: tasksApi.remove,
     onSuccess: () => {
-      toast.success('মুছে ফেলা হয়েছে');
+      toast.success(t('মুছে ফেলা হয়েছে'));
       invalidate();
     },
     onError: (err) => toast.error(err.message),
@@ -102,7 +103,7 @@ export const TasksTab = () => {
               size="sm"
               variant="ghost"
               className="text-rose-600"
-              onClick={() => window.confirm('এই রেকর্ড মুছে ফেলবেন?') && remove.mutate(row.id)}
+              onClick={() => window.confirm(t('এই রেকর্ড মুছে ফেলবেন?')) && remove.mutate(row.id)}
             >
               ✕
             </Button>

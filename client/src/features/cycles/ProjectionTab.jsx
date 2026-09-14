@@ -11,10 +11,11 @@ import { Loading, ErrorState } from '@/components/ui/States.jsx';
 import { CycleForm } from './CycleForm.jsx';
 import { currency, number, percent, roas } from '@/lib/format.js';
 import { useAuth } from '@/features/auth/AuthContext.jsx';
+import { t } from '@/i18n/index.jsx';
 
 const AssumptionRow = ({ label, value }) => (
   <div className="flex items-center justify-between border-b border-slate-100 py-2.5 last:border-0">
-    <span className="text-sm text-slate-600">{label}</span>
+    <span className="text-sm text-slate-600">{t(label)}</span>
     <span className="text-sm font-semibold text-slate-900">{value}</span>
   </div>
 );
@@ -40,7 +41,7 @@ export const ProjectionTab = () => {
   const updateCycle = useMutation({
     mutationFn: (payload) => cyclesApi.update({ id: cycle.id, ...payload }),
     onSuccess: () => {
-      toast.success('অ্যাসাম্পশন আপডেট হয়েছে');
+      toast.success(t('অ্যাসাম্পশন আপডেট হয়েছে'));
       invalidate();
       setEditing(false);
       setBudgets({});
@@ -51,7 +52,7 @@ export const ProjectionTab = () => {
   const updateWeek = useMutation({
     mutationFn: ({ weekNo, budget }) => cyclesApi.updateWeek({ id: cycle.id, weekNo, budget }),
     onSuccess: () => {
-      toast.success('সাপ্তাহিক বাজেট আপডেট হয়েছে');
+      toast.success(t('সাপ্তাহিক বাজেট আপডেট হয়েছে'));
       invalidate();
       setBudgets({});
     },

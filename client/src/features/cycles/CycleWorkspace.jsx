@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/Badge.jsx';
 import { Loading, ErrorState } from '@/components/ui/States.jsx';
 import { CYCLE_STATUS_LABEL } from '@/lib/status.js';
 import { currency } from '@/lib/format.js';
+import { t, tData } from '@/i18n/index.jsx';
 
 const TABS = [
   { to: '', label: 'টার্গেট ও প্রজেকশন', end: true },
@@ -35,8 +36,11 @@ export const CycleWorkspace = () => {
             {data.client_name}
           </Link>
         }
-        title={`${data.name} · ${String(data.month_start).slice(0, 7)}`}
-        subtitle={`মাসিক বাজেট ${currency(data.monthly_budget)} · ${data.weeks_count} সপ্তাহ`}
+        title={`${tData(data.name)} · ${String(data.month_start).slice(0, 7)}`}
+        subtitle={t('মাসিক বাজেট {budget} · {weeks} সপ্তাহ', {
+          budget: currency(data.monthly_budget),
+          weeks: data.weeks_count,
+        })}
         actions={
           <Badge tone={data.status === 'running' ? 'success' : data.status === 'planned' ? 'info' : 'muted'}>
             {CYCLE_STATUS_LABEL[data.status]}
@@ -60,7 +64,7 @@ export const CycleWorkspace = () => {
                 )
               }
             >
-              {tab.label}
+              {t(tab.label)}
             </NavLink>
           ))}
         </nav>

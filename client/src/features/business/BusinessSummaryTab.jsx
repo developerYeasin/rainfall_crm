@@ -10,14 +10,15 @@ import { Badge } from '@/components/ui/Badge.jsx';
 import { Loading, ErrorState, EmptyState } from '@/components/ui/States.jsx';
 import { currency, number, percent, roas } from '@/lib/format.js';
 import { EXPENSE_CATEGORY_LABEL, ORDER_STATUS_LABEL, ORDER_STATUS_TONE, STOCK_STATUS } from '@/lib/status.js';
+import { t } from '@/i18n/index.jsx';
 
 /** One line of a P&L / cash statement. `total` rows are bold with a rule above. */
 const Line = ({ label, value, sign, total, hint }) => (
   <tr className={clsx(total && 'border-t-2 border-slate-200 bg-slate-50')}>
     <td className={clsx(total ? 'font-semibold text-slate-900' : 'text-slate-700', !total && sign && 'pl-8')}>
       {sign && <span className="mr-1 text-slate-400">{sign}</span>}
-      {label}
-      {hint && <span className="ml-2 text-xs text-slate-400">{hint}</span>}
+      {t(label)}
+      {hint && <span className="ml-2 text-xs text-slate-400">{t(hint)}</span>}
     </td>
     <td
       className={clsx(
@@ -68,7 +69,7 @@ export const BusinessSummaryTab = () => {
       header: '',
       render: (r) =>
         r.available < 0 ? (
-          <Badge tone="danger">{number(-r.available)} পিস কম</Badge>
+          <Badge tone="danger">{t('{n} পিস কম', { n: number(-r.available) })}</Badge>
         ) : (
           <Badge tone={STOCK_STATUS[r.stock_status].tone}>{STOCK_STATUS[r.stock_status].label}</Badge>
         ),
@@ -81,44 +82,52 @@ export const BusinessSummaryTab = () => {
         <StatTile
           label="মোট সেল"
           value={currency(sales.revenue)}
-          hint={`${number(sales.orders)} অর্ডার · ${number(sales.qty)} পিস`}
+          hint={t('{orders} অর্ডার · {qty} পিস', { orders: number(sales.orders), qty: number(sales.qty) })}
         />
         <StatTile
           label="নিট প্রফিট"
           value={currency(profit.net)}
           tone={profit.net < 0 ? 'danger' : undefined}
-          hint={`মার্জিন ${percent(profit.margin, 1)} · গ্রস ${currency(profit.gross)}`}
+          hint={t('মার্জিন {margin} · গ্রস {gross}', { margin: percent(profit.margin, 1), gross: currency(profit.gross) })}
         />
         <StatTile
           label="ক্যাশ ব্যালেন্স"
           value={currency(cash.balance)}
           tone={cash.balance < 0 ? 'danger' : undefined}
-          hint={`ইন ${currency(cash.in)} · আউট ${currency(cash.out)}`}
+          hint={t('ইন {in} · আউট {out}', { in: currency(cash.in), out: currency(cash.out) })}
         />
         <StatTile
           label="মোট মার্কেটিং খরচ"
           value={currency(marketing.total)}
-          hint={`ROAS ${roas(marketing.roas)} · প্রতি অর্ডার ${currency(marketing.cost_per_order)}`}
+          hint={t('ROAS {roas} · প্রতি অর্ডার {cpo}', { roas: roas(marketing.roas), cpo: currency(marketing.cost_per_order) })}
         />
       </div>
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <StatTile label="সেল হয়েছে" value={`${number(sales.qty)} পিস`} hint={`গড় অর্ডার ${currency(sales.avg_order_value)}`} />
+        <StatTile
+          label="সেল হয়েছে"
+          value={t('{n} পিস', { n: number(sales.qty) })}
+          hint={t('গড় অর্ডার {aov}', { aov: currency(sales.avg_order_value) })}
+        />
         <StatTile
           label="স্টকে আছে (এখন)"
-          value={`${number(stock.units)} পিস`}
-          hint={`কেনা দামে ${currency(stock.value)} · ${number(stock.active_products)} প্রোডাক্ট`}
+          value={t('{n} পিস', { n: number(stock.units) })}
+          hint={t('কেনা দামে {value} · {n} প্রোডাক্ট', { value: currency(stock.value), n: number(stock.active_products) })}
         />
         <StatTile
           label="প্রি-অর্ডার"
-          value={`${number(pre.qty)} পিস`}
-          hint={`${number(pre.orders)} অর্ডার · ${currency(pre.value)} · অগ্রিম ${currency(pre.advance)}`}
+          value={t('{n} পিস', { n: number(pre.qty) })}
+          hint={t('{orders} অর্ডার · {value} · অগ্রিম {advance}', {
+            orders: number(pre.orders),
+            value: currency(pre.value),
+            advance: currency(pre.advance),
+          })}
         />
         <StatTile
           label="কাস্টমারের কাছে বাকি"
           value={currency(sales.due)}
           tone={sales.due > 0 ? 'danger' : undefined}
-          hint={`পেমেন্ট পাওয়া ${currency(sales.cash_received)}`}
+          hint={t('পেমেন্ট পাওয়া {n}', { n: currency(sales.cash_received) })}
         />
       </div>
 
@@ -131,8 +140,7 @@ export const BusinessSummaryTab = () => {
             </div>
           ))}
           <div className="ml-auto text-sm text-slate-500">
-            স্টক অ্যালার্ট: <span className="font-medium text-amber-700">{number(stock.low)} কম</span> ·{' '}
-            <span className="font-medium text-rose-700">{number(stock.out)} শেষ</span>
+            {t('স্টক অ্যালার্ট: {low} কম · {out} শেষ', { low: number(stock.low), out: number(stock.out) })}
           </div>
         </CardBody>
       </Card>
@@ -151,7 +159,7 @@ export const BusinessSummaryTab = () => {
                 {nonMarketingExpenses.map((e) => (
                   <Line key={e.category} sign="−" label={EXPENSE_CATEGORY_LABEL[e.category]} value={-e.total} />
                 ))}
-                <Line total label="নিট প্রফিট" value={profit.net} hint={`মার্জিন ${percent(profit.margin, 1)}`} />
+                <Line total label="নিট প্রফিট" value={profit.net} hint={t('মার্জিন {margin}', { margin: percent(profit.margin, 1) })} />
               </tbody>
             </table>
           </div>
@@ -165,7 +173,7 @@ export const BusinessSummaryTab = () => {
                 <Line label="সেলের পেমেন্ট পাওয়া" value={sales.cash_received} />
                 <Line label="প্রি-অর্ডারের অগ্রিম" value={pre.advance} />
                 <Line total label="মোট ক্যাশ ইন" value={cash.in} />
-                <Line sign="−" label="স্টক কেনা" value={-purchases.cost} hint={`${number(purchases.qty)} পিস`} />
+                <Line sign="−" label="স্টক কেনা" value={-purchases.cost} hint={t('{n} পিস', { n: number(purchases.qty) })} />
                 <Line sign="−" label="অ্যাড স্পেন্ড" value={-marketing.ad_spend} />
                 <Line sign="−" label="অন্যান্য সব খরচ" value={-expenses.total} />
                 <Line total label="ক্যাশ ব্যালেন্স" value={cash.balance} />
@@ -173,8 +181,10 @@ export const BusinessSummaryTab = () => {
             </table>
           </div>
           <CardBody className="border-t border-slate-100 py-3 text-xs text-slate-500">
-            প্রফিট আর ক্যাশ আলাদা: কাস্টমারের বাকি {currency(sales.due)} ও স্টকে থাকা মাল {currency(stock.value)}{' '}
-            এখনো ক্যাশ হয়নি।
+            {t('প্রফিট আর ক্যাশ আলাদা: কাস্টমারের বাকি {due} ও স্টকে থাকা মাল {stock} এখনো ক্যাশ হয়নি।', {
+              due: currency(sales.due),
+              stock: currency(stock.value),
+            })}
           </CardBody>
         </Card>
       </div>
@@ -202,9 +212,9 @@ export const BusinessSummaryTab = () => {
                   />
                   <Tooltip formatter={(v) => currency(v)} />
                   <Legend />
-                  <Bar dataKey="revenue" name="সেল" fill="#3182f6" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="marketing" name="অ্যাড স্পেন্ড" fill="#f59e0b" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="net_profit" name="নিট প্রফিট" fill="#22c55e" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="revenue" name={t('সেল')} fill="#3182f6" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="marketing" name={t('অ্যাড স্পেন্ড')} fill="#f59e0b" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="net_profit" name={t('নিট প্রফিট')} fill="#22c55e" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>

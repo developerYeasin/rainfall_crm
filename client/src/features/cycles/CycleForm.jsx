@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/Button.jsx';
 import { Field, Input, Select } from '@/components/ui/Field.jsx';
 import { CYCLE_STATUS_LABEL } from '@/lib/status.js';
 import { currency, number } from '@/lib/format.js';
+import { t } from '@/i18n/index.jsx';
 
 const STATUS_OPTIONS = Object.entries(CYCLE_STATUS_LABEL).map(([value, label]) => ({ value, label }));
 
@@ -92,7 +93,7 @@ export const CycleForm = ({ open, onClose, onSubmit, initial, saving }) => {
         </Field>
 
         <div className="sm:col-span-2 mt-1 border-t border-slate-100 pt-3">
-          <p className="text-sm font-semibold text-slate-800">ধাপ ১: অ্যাসাম্পশন / ইনপুট</p>
+          <p className="text-sm font-semibold text-slate-800">{t('ধাপ ১: অ্যাসাম্পশন / ইনপুট')}</p>
         </div>
 
         <Field label="মোট মাসিক অ্যাড বাজেট (৳)">
@@ -118,22 +119,22 @@ export const CycleForm = ({ open, onClose, onSubmit, initial, saving }) => {
         </Field>
 
         <div className="sm:col-span-2 rounded-lg bg-slate-50 p-4 text-sm">
-          <p className="mb-2 font-medium text-slate-700">মাসিক প্রজেকশন প্রিভিউ</p>
+          <p className="mb-2 font-medium text-slate-700">{t('মাসিক প্রজেকশন প্রিভিউ')}</p>
           <div className="grid grid-cols-2 gap-2 text-slate-600 sm:grid-cols-5">
             <div>
-              ক্লিক
+              {t('ক্লিক')}
               <p className="font-semibold text-slate-900">{number(preview.clicks)}</p>
             </div>
             <div>
-              ইমপ্রেশন
+              {t('ইমপ্রেশন')}
               <p className="font-semibold text-slate-900">{number(preview.impressions)}</p>
             </div>
             <div>
-              কনভার্সন
+              {t('কনভার্সন')}
               <p className="font-semibold text-slate-900">{number(preview.conversions)}</p>
             </div>
             <div>
-              রেভিনিউ
+              {t('রেভিনিউ')}
               <p className="font-semibold text-slate-900">{currency(preview.revenue)}</p>
             </div>
             <div>

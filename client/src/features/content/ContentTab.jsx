@@ -13,6 +13,7 @@ import { ContentForm, CONTENT_STATUS, PLATFORMS } from './ContentForm.jsx';
 import { CONTENT_STATUS_TONE } from '@/lib/status.js';
 import { dateLabel } from '@/lib/format.js';
 import { useAuth } from '@/features/auth/AuthContext.jsx';
+import { t } from '@/i18n/index.jsx';
 
 export const ContentTab = () => {
   const { cycle } = useOutletContext();
@@ -40,7 +41,7 @@ export const ContentTab = () => {
     mutationFn: (payload) =>
       payload.id ? contentApi.update(payload) : contentApi.create({ ...payload, cycle_id: cycle.id }),
     onSuccess: () => {
-      toast.success('কন্টেন্ট সংরক্ষিত হয়েছে');
+      toast.success(t('কন্টেন্ট সংরক্ষিত হয়েছে'));
       invalidate();
       setEditing(null);
     },
@@ -56,7 +57,7 @@ export const ContentTab = () => {
   const remove = useMutation({
     mutationFn: contentApi.remove,
     onSuccess: () => {
-      toast.success('মুছে ফেলা হয়েছে');
+      toast.success(t('মুছে ফেলা হয়েছে'));
       invalidate();
     },
     onError: (err) => toast.error(err.message),
@@ -70,7 +71,7 @@ export const ContentTab = () => {
   const columns = [
     { key: 'plan_date', header: 'তারিখ', render: (r) => dateLabel(r.plan_date) },
     { key: 'platform', header: 'প্ল্যাটফর্ম' },
-    { key: 'content_type', header: 'কন্টেন্ট টাইপ' },
+    { key: 'content_type', header: 'কন্টেন্ট টাইপ', render: (r) => t(r.content_type) },
     { key: 'topic', header: 'টপিক / ক্যাপশন আইডিয়া' },
     {
       key: 'status',
@@ -104,7 +105,7 @@ export const ContentTab = () => {
               size="sm"
               variant="ghost"
               className="text-rose-600"
-              onClick={() => window.confirm('এই কন্টেন্ট মুছে ফেলবেন?') && remove.mutate(row.id)}
+              onClick={() => window.confirm(t('এই কন্টেন্ট মুছে ফেলবেন?')) && remove.mutate(row.id)}
             >
               ✕
             </Button>
@@ -122,7 +123,7 @@ export const ContentTab = () => {
           const found = counts.find((c) => c.status === status);
           return (
             <Badge key={status} tone={CONTENT_STATUS_TONE[status]}>
-              {status}: {found ? found.total : 0}
+              {t(status)}: {found ? found.total : 0}
             </Badge>
           );
         })}

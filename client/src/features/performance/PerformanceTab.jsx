@@ -12,6 +12,7 @@ import { StatTile } from '@/components/ui/StatTile.jsx';
 import { PerformanceForm } from './PerformanceForm.jsx';
 import { currency, number, percent, roas, dateLabel } from '@/lib/format.js';
 import { useAuth } from '@/features/auth/AuthContext.jsx';
+import { t } from '@/i18n/index.jsx';
 
 const PLATFORMS = ['Facebook', 'Instagram', 'Google', 'TikTok', 'YouTube', 'LinkedIn', 'Other'];
 
@@ -45,7 +46,7 @@ export const PerformanceTab = () => {
         ? performanceApi.update(payload)
         : performanceApi.create({ ...payload, cycle_id: cycle.id }),
     onSuccess: () => {
-      toast.success('এন্ট্রি সংরক্ষিত হয়েছে');
+      toast.success(t('এন্ট্রি সংরক্ষিত হয়েছে'));
       invalidate();
       setEditing(null);
     },
@@ -55,7 +56,7 @@ export const PerformanceTab = () => {
   const remove = useMutation({
     mutationFn: performanceApi.remove,
     onSuccess: () => {
-      toast.success('এন্ট্রি মুছে ফেলা হয়েছে');
+      toast.success(t('এন্ট্রি মুছে ফেলা হয়েছে'));
       invalidate();
     },
     onError: (err) => toast.error(err.message),
@@ -69,7 +70,7 @@ export const PerformanceTab = () => {
 
   const columns = [
     { key: 'entry_date', header: 'তারিখ', render: (r) => dateLabel(r.entry_date) },
-    { key: 'week_no', header: 'সপ্তাহ', render: (r) => `সপ্তাহ ${r.week_no}` },
+    { key: 'week_no', header: 'সপ্তাহ', render: (r) => t('সপ্তাহ {n}', { n: r.week_no }) },
     { key: 'platform', header: 'প্ল্যাটফর্ম' },
     { key: 'spend', header: 'স্পেন্ড (৳)', align: 'right', render: (r) => currency(r.spend) },
     { key: 'impressions', header: 'ইমপ্রেশন', align: 'right', render: (r) => number(r.impressions) },
@@ -94,7 +95,7 @@ export const PerformanceTab = () => {
               size="sm"
               variant="ghost"
               className="text-rose-600"
-              onClick={() => window.confirm('এই এন্ট্রি মুছে ফেলবেন?') && remove.mutate(row.id)}
+              onClick={() => window.confirm(t('এই এন্ট্রি মুছে ফেলবেন?')) && remove.mutate(row.id)}
             >
               ✕
             </Button>
@@ -117,7 +118,7 @@ export const PerformanceTab = () => {
 
   const weekOptions = Array.from({ length: cycle.weeks_count }, (_, i) => ({
     value: String(i + 1),
-    label: `সপ্তাহ ${i + 1}`,
+    label: t('সপ্তাহ {n}', { n: i + 1 }),
   }));
 
   return (

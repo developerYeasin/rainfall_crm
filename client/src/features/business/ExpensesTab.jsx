@@ -13,6 +13,7 @@ import { Field, Input, Select } from '@/components/ui/Field.jsx';
 import { Loading, ErrorState } from '@/components/ui/States.jsx';
 import { currency, dateLabel, roas, today } from '@/lib/format.js';
 import { EXPENSE_CATEGORY_LABEL } from '@/lib/status.js';
+import { t } from '@/i18n/index.jsx';
 
 const CATEGORY_OPTIONS = Object.entries(EXPENSE_CATEGORY_LABEL).map(([value, label]) => ({ value, label }));
 
@@ -83,7 +84,7 @@ export const ExpensesTab = () => {
     mutationFn: (payload) =>
       payload.id ? businessApi.updateExpense(clientId, payload) : businessApi.createExpense(clientId, payload),
     onSuccess: () => {
-      toast.success('খরচ সংরক্ষিত হয়েছে');
+      toast.success(t('খরচ সংরক্ষিত হয়েছে'));
       invalidate();
       setEditing(null);
     },
@@ -92,7 +93,7 @@ export const ExpensesTab = () => {
   const remove = useMutation({
     mutationFn: (id) => businessApi.removeExpense(clientId, id),
     onSuccess: () => {
-      toast.success('খরচ মুছে ফেলা হয়েছে');
+      toast.success(t('খরচ মুছে ফেলা হয়েছে'));
       invalidate();
     },
     onError: (err) => toast.error(err.message),
@@ -128,7 +129,7 @@ export const ExpensesTab = () => {
                   size="sm"
                   variant="ghost"
                   className="text-rose-600"
-                  onClick={() => window.confirm('এই খরচ মুছবেন?') && remove.mutate(r.id)}
+                  onClick={() => window.confirm(t('এই খরচ মুছবেন?')) && remove.mutate(r.id)}
                 >
                   মুছুন
                 </Button>
@@ -140,7 +141,7 @@ export const ExpensesTab = () => {
   ];
 
   const categoryColumns = [
-    { key: 'category', header: 'খাত', render: (r) => r.label },
+    { key: 'category', header: 'খাত', render: (r) => t(r.label) },
     { key: 'total', header: 'টাকা', align: 'right', render: (r) => currency(r.total) },
   ];
   const categoryRows = [
@@ -152,11 +153,14 @@ export const ExpensesTab = () => {
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatTile label="অ্যাড স্পেন্ড" value={currency(marketing.ad_spend)} hint="ফেসবুক/গুগল ইত্যাদি" />
-        <StatTile label="মোট মার্কেটিং" value={currency(marketing.total)} hint={`অন্যান্য ${currency(marketing.other_marketing)}`} />
+        <StatTile label="মোট মার্কেটিং" value={currency(marketing.total)} hint={t('অন্যান্য {n}', { n: currency(marketing.other_marketing) })} />
         <StatTile
           label="মার্কেটিং রিটার্ন"
           value={roas(marketing.roas)}
-          hint={`${currency(sales.revenue)} সেল · প্রতি অর্ডারে ${currency(marketing.cost_per_order)}`}
+          hint={t('{sales} সেল · প্রতি অর্ডারে {cpo}', {
+            sales: currency(sales.revenue),
+            cpo: currency(marketing.cost_per_order),
+          })}
         />
         <StatTile label="মোট খরচ" value={currency(totals.total + marketing.ad_spend)} hint="অ্যাড + সব খাত" />
       </div>
@@ -165,7 +169,7 @@ export const ExpensesTab = () => {
         <Card className="lg:col-span-2">
           <CardHeader
             title="খরচের তালিকা"
-            subtitle={`এই ফিল্টারে মোট ${currency(expenses.data.meta.amount)}`}
+            subtitle={t('এই ফিল্টারে মোট {n}', { n: currency(expenses.data.meta.amount) })}
             actions={
               <>
                 <Select

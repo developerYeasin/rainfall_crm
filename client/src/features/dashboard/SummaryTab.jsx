@@ -21,6 +21,7 @@ import { Badge } from '@/components/ui/Badge.jsx';
 import { Loading, ErrorState, EmptyState } from '@/components/ui/States.jsx';
 import { currency, number, percent, roas, dateLabel } from '@/lib/format.js';
 import { WEEK_STATUS_TONE } from '@/lib/status.js';
+import { t } from '@/i18n/index.jsx';
 
 const PIE_COLORS = ['#3182f6', '#22c55e', '#f59e0b', '#a855f7', '#ef4444', '#14b8a6', '#64748b'];
 
@@ -47,7 +48,7 @@ export const SummaryTab = () => {
     ['মোট কনভার্সন', number(m.total_conversions), 'এখন পর্যন্ত মোট অর্ডার/লিড'],
     ['ডেইলি টাস্ক কমপ্লায়েন্স রেট', percent(m.compliance_rate, 1), 'কতদিন ১০০% টাস্ক সম্পন্ন হয়েছে'],
     ['রিপোর্ট করা মোট দিন', number(m.reported_days), 'যতদিনের রিয়েল ডেটা এন্ট্রি হয়েছে'],
-    ['বাজেট ব্যবহার', percent(m.budget_utilisation, 1), `অবশিষ্ট ${currency(m.remaining_budget)}`],
+    ['বাজেট ব্যবহার', percent(m.budget_utilisation, 1), t('অবশিষ্ট {n}', { n: currency(m.remaining_budget) })],
   ];
 
   const weekColumns = [
@@ -67,13 +68,13 @@ export const SummaryTab = () => {
         <StatTile
           label="মোট স্পেন্ড"
           value={currency(m.total_spend)}
-          hint={`বাজেটের ${percent(m.budget_utilisation, 1)}`}
+          hint={t('বাজেটের {n}', { n: percent(m.budget_utilisation, 1) })}
         />
-        <StatTile label="রিয়েল ROAS" value={roas(m.actual_roas)} hint={`টার্গেট ${roas(m.target_roas)}`} />
+        <StatTile label="রিয়েল ROAS" value={roas(m.actual_roas)} hint={t('টার্গেট {n}', { n: roas(m.target_roas) })} />
         <StatTile
           label="কমপ্লায়েন্স রেট"
           value={percent(m.compliance_rate, 1)}
-          hint={`${number(m.tracked_days)} দিন ট্র্যাক`}
+          hint={t('{n} দিন ট্র্যাক', { n: number(m.tracked_days) })}
         />
       </div>
 
@@ -109,8 +110,8 @@ export const SummaryTab = () => {
                     />
                     <Tooltip formatter={(v) => currency(v)} />
                     <Legend />
-                    <Area type="monotone" dataKey="revenue" name="রেভিনিউ" stroke="#3182f6" fill="url(#rev)" />
-                    <Area type="monotone" dataKey="spend" name="স্পেন্ড" stroke="#f59e0b" fill="none" />
+                    <Area type="monotone" dataKey="revenue" name={t('রেভিনিউ')} stroke="#3182f6" fill="url(#rev)" />
+                    <Area type="monotone" dataKey="spend" name={t('স্পেন্ড')} stroke="#f59e0b" fill="none" />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
@@ -152,17 +153,17 @@ export const SummaryTab = () => {
             <table className="table">
               <thead>
                 <tr>
-                  <th>মেট্রিক</th>
-                  <th className="text-right">মান</th>
-                  <th>ব্যাখ্যা</th>
+                  <th>{t('মেট্রিক')}</th>
+                  <th className="text-right">{t('মান')}</th>
+                  <th>{t('ব্যাখ্যা')}</th>
                 </tr>
               </thead>
               <tbody>
                 {metricRows.map(([label, value, hint]) => (
                   <tr key={label}>
-                    <td className="font-medium text-slate-800">{label}</td>
+                    <td className="font-medium text-slate-800">{t(label)}</td>
                     <td className="text-right font-semibold text-slate-900">{value}</td>
-                    <td className="text-slate-500">{hint}</td>
+                    <td className="text-slate-500">{t(hint)}</td>
                   </tr>
                 ))}
               </tbody>
