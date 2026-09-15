@@ -11,5 +11,6 @@ router.get('/', authorize(ROLES.ADMIN, ROLES.MANAGER), validate(listUsersSchema,
 router.get('/:id', authorize(ROLES.ADMIN, ROLES.MANAGER), validate(idParamSchema, 'params'), userController.get);
 router.patch('/:id', authorize(ROLES.ADMIN), validate(idParamSchema, 'params'), validate(updateUserSchema), userController.update);
 router.delete('/:id', authorize(ROLES.ADMIN), validate(idParamSchema, 'params'), userController.deactivate);
+router.post('/:id/reset-password', authorize(ROLES.ADMIN, ROLES.MANAGER), validate(idParamSchema, 'params'), userController.resetPassword);
 
 export default router;

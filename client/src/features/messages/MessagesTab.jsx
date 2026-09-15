@@ -44,7 +44,10 @@ export const MessagesTab = () => {
     onError: (err) => toast.error(err.message),
   });
 
-  useEffect(() => endRef.current?.scrollIntoView({ block: 'end' }), [data?.length]);
+  // Braces matter: newer browsers return a Promise from scrollIntoView, which React would call as the cleanup.
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ block: 'end' });
+  }, [data?.length]);
 
   if (isLoading) return <Loading />;
   if (error) return <ErrorState error={error} onRetry={refetch} />;

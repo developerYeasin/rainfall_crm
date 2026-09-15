@@ -299,4 +299,67 @@ export const EN_AGENCY = {
   'মেসেজ লিখুন': 'Write a message',
   'টাস্ক পাওয়া যায়নি': 'Task not found',
   'অন্যকে টাস্ক দিতে পারেন শুধু অ্যাডমিন বা ম্যানেজার': 'Only admins or managers can assign tasks to others',
+
+  // Generated credentials
+  'কপি': 'Copy',
+  'কপি হয়েছে': 'Copied',
+  'কপি করা যায়নি — হাতে কপি করুন': 'Could not copy — copy it manually',
+  'লগইন': 'Login',
+  'লগইন লিংক': 'Login link',
+  'পাসওয়ার্ড': 'Password',
+  'লগইন তৈরি হয়েছে': 'Login created',
+  'সব কপি করুন': 'Copy all',
+  'এই পাসওয়ার্ড আর দেখানো হবে না। ইমেইলেও পাঠানো হয়েছে — প্রয়োজনে রিসেট করুন।':
+    'This password will not be shown again. It was also emailed — reset it if needed.',
+  'নতুন অ্যাকাউন্ট': 'New account',
+  '+ নতুন অ্যাকাউন্ট': '+ New account',
+  'লগইন ইমেইল': 'Login email',
+  'লগইন ইমেইল *': 'Login email *',
+  'ইমেইল ও পাসওয়ার্ড স্বয়ংক্রিয়ভাবে তৈরি হয়ে ইমেইলে চলে যাবে': 'The login and password are generated automatically and emailed',
+  'অ্যাকাউন্ট তৈরি হয়েছে': 'Account created',
+  'পাসওয়ার্ড রিসেট': 'Reset password',
+  'নতুন পাসওয়ার্ড তৈরি করবেন? পুরোনো পাসওয়ার্ড আর কাজ করবে না।': 'Generate a new password? The old password will stop working.',
+  'টিম মেম্বার ও ক্লায়েন্টের লগইন — পাসওয়ার্ড স্বয়ংক্রিয়ভাবে তৈরি হয়': 'Team and client logins — passwords are generated automatically',
+  'নাম বা ইমেইল খুঁজুন…': 'Search name or email…',
+  'ক্লায়েন্টের জন্য লগইন (ইমেইল ও পাসওয়ার্ড) তৈরি করুন': 'Create a login (email & password) for this client',
+  'খালি রাখলে উপরের ইমেইল ব্যবহার হবে। পাসওয়ার্ড স্বয়ংক্রিয়ভাবে তৈরি হয়ে ইমেইলে যাবে।':
+    'Leave empty to use the email above. The password is generated and emailed.',
+  'ক্লায়েন্ট লগইন': 'Client login',
+  'ক্লায়েন্ট এই ইমেইল ও পাসওয়ার্ড দিয়ে নিজের ড্যাশবোর্ডে ঢুকবে': 'The client signs in to their dashboard with this email and password',
+  'লগইন তৈরি করুন': 'Create login',
+  'এখনো কোনো লগইন নেই।': 'No login yet.',
+  'লগইন তৈরির জন্য ক্লায়েন্টের ইমেইল দিন': "Enter the client's email to create a login",
+  'ম্যানেজার অ্যাডমিন অ্যাকাউন্ট তৈরি করতে পারে না': 'Managers cannot create admin accounts',
+  'সঠিক লগইন ইমেইল দিন': 'Enter a valid login email',
+
+  // Change password
+  'পাসওয়ার্ড পরিবর্তন': 'Change password',
+  'বর্তমান পাসওয়ার্ড': 'Current password',
+  'নতুন পাসওয়ার্ড': 'New password',
+  'নতুন পাসওয়ার্ড আবার দিন': 'Confirm new password',
+  'দুটি পাসওয়ার্ড মেলেনি': 'The passwords do not match',
+  'পাসওয়ার্ড পরিবর্তন হয়েছে — নতুন পাসওয়ার্ড দিয়ে লগইন করুন': 'Password changed — log in with the new password',
+
+  // Inbox
+  'ইনবক্স': 'Inbox',
+  'টিম ও ক্লায়েন্ট — সবার সাথে সরাসরি মেসেজ': 'Direct messages with the team and clients',
+  'কেউ নেই': 'No one here',
+  'আপনি': 'You',
+  'দেখেছে': 'Seen',
+  'ফিরে যান': 'Back',
+  'মেসেজের কপি প্রাপকের ইমেইলেও যাবে': "A copy goes to the recipient's email too",
+  'মেসেজ পাঠাতে বাম পাশ থেকে কাউকে বেছে নিন': 'Pick someone on the left to start messaging',
+
+  // Date range
+  'আজ': 'Today',
+  'গত ৭ দিন': 'Last 7 days',
+  'তারিখ বেছে নিন (ক্যালেন্ডার)…': 'Pick dates (calendar)…',
+  'শুরু': 'From',
+  'শেষ': 'To',
+
+  // Summary
+  'মোট অর্ডার': 'Total orders',
+  'ডেলিভারড {delivered} · ডেলিভারি বাকি {pending}': 'Delivered {delivered} · awaiting delivery {pending}',
+  'অর্ডারের অগ্রিম পেমেন্ট': 'Order advance payments',
+  'কম বা শেষ হয়ে যাওয়া স্টক': 'Low or out-of-stock products',
 };

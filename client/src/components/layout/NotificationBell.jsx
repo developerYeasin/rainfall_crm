@@ -27,6 +27,7 @@ const TEMPLATES = {
   announcement: (d) => t('ঘোষণা: {preview}', d),
   agency_message: (d) => t('{from}: {preview}', d),
   client_message: (d) => t('{client} — {from}: {preview}', d),
+  direct_message: (d) => t('{from}: {preview}', d),
 };
 
 export const notificationText = (n) => (TEMPLATES[n.type] ? TEMPLATES[n.type](n.data || {}) : n.type);

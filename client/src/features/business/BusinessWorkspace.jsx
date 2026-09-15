@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { businessApi } from '@/api/endpoints.js';
 import { PageHeader } from '@/components/layout/PageHeader.jsx';
-import { Select } from '@/components/ui/Field.jsx';
+import { Input, Select } from '@/components/ui/Field.jsx';
 import { Loading, ErrorState } from '@/components/ui/States.jsx';
 import { useAuth } from '@/features/auth/AuthContext.jsx';
 import { BUSINESS_WRITE_ROLES } from '@/lib/status.js';
@@ -31,7 +31,8 @@ export const BusinessWorkspace = () => {
   const isClient = user.role === 'client';
   const clientId = Number(id ?? user.client_id);
   const [rangeKey, setRangeKey] = useState('all');
-  const range = useMemo(() => rangeFor(rangeKey), [rangeKey]);
+  const [custom, setCustom] = useState({ from: '', to: '' });
+  const range = useMemo(() => rangeFor(rangeKey, new Date(), custom), [rangeKey, custom]);
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['business', clientId, 'profile'],
@@ -54,12 +55,38 @@ export const BusinessWorkspace = () => {
         title={isClient ? t('{name} — আমার ব্যবসা', { name: data.name }) : 'ব্যবসার হিসাব'}
         subtitle={data.company || 'সেল, স্টক, প্রি-অর্ডার, মার্কেটিং খরচ ও প্রফিট — সব এক জায়গায়'}
         actions={
-          <Select
-            className="w-52"
-            value={rangeKey}
-            onChange={(e) => setRangeKey(e.target.value)}
-            options={RANGE_OPTIONS}
-          />
+          <div className="flex w-full flex-wrap items-end gap-2 sm:w-auto">
+            <Select
+              className="w-full sm:w-56"
+              value={rangeKey}
+              onChange={(e) => setRangeKey(e.target.value)}
+              options={RANGE_OPTIONS}
+            />
+            {rangeKey === 'custom' && (
+              <>
+                <label className="flex-1 sm:flex-none">
+                  <span className="mb-0.5 block text-xs text-slate-500">{t('শুরু')}</span>
+                  <Input
+                    type="date"
+                    className="w-full sm:w-40"
+                    value={custom.from}
+                    max={custom.to || undefined}
+                    onChange={(e) => setCustom({ ...custom, from: e.target.value })}
+                  />
+                </label>
+                <label className="flex-1 sm:flex-none">
+                  <span className="mb-0.5 block text-xs text-slate-500">{t('শেষ')}</span>
+                  <Input
+                    type="date"
+                    className="w-full sm:w-40"
+                    value={custom.to}
+                    min={custom.from || undefined}
+                    onChange={(e) => setCustom({ ...custom, to: e.target.value })}
+                  />
+                </label>
+              </>
+            )}
+          </div>
         }
       />
 

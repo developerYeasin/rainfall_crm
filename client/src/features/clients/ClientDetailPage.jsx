@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/Button.jsx';
 import { Loading, ErrorState } from '@/components/ui/States.jsx';
 import { CycleForm } from '@/features/cycles/CycleForm.jsx';
 import { ClientStaffCard } from './ClientStaffCard.jsx';
+import { ClientLoginCard } from './ClientLoginCard.jsx';
 import { CLIENT_STATUS_LABEL, CLIENT_STATUS_TONE, CYCLE_STATUS_LABEL } from '@/lib/status.js';
 import { currency, dateLabel } from '@/lib/format.js';
 import { useAuth } from '@/features/auth/AuthContext.jsx';
@@ -117,8 +118,9 @@ export const ClientDetailPage = () => {
         </Card>
       </div>
 
-      <div className="mt-4">
+      <div className={can('admin', 'manager') ? 'mt-4 grid gap-4 lg:grid-cols-2' : 'mt-4'}>
         <ClientStaffCard clientId={Number(id)} />
+        {can('admin', 'manager') && <ClientLoginCard client={data} />}
       </div>
 
       <Card className="mt-4">

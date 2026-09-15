@@ -19,6 +19,14 @@ export const createClientSchema = z.object({
 
 export const updateClientSchema = createClientSchema.partial();
 
+/** Portal login issued together with a new client (defaults to the client's own email). */
+export const createClientWithLoginSchema = createClientSchema.extend({
+  create_login: z.boolean().default(true),
+  login_email: z.string().email('সঠিক লগইন ইমেইল দিন').nullable().optional().or(z.literal('')),
+});
+
+export const clientLoginSchema = z.object({ email: z.string().email('সঠিক ইমেইল দিন').optional() });
+
 export const listClientsSchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(200).default(25),

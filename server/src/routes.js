@@ -13,6 +13,7 @@ import dashboardRoutes from './modules/dashboard/dashboard.routes.js';
 import activityRoutes from './modules/activity/activity.routes.js';
 import adAccountRoutes from './modules/ads/ads.routes.js';
 import financeRoutes from './modules/finance/finance.routes.js';
+import chatRoutes from './modules/chat/chat.routes.js';
 import notificationRoutes from './modules/notifications/notification.routes.js';
 import agencyTaskRoutes, { teamRouter } from './modules/agencyTasks/agencyTask.routes.js';
 import {
@@ -58,6 +59,7 @@ router.get('/meta', (req, res) =>
 // Open to every login but always scoped: notifications by user, /business/* by client.
 router.use('/notifications', notificationRoutes);
 router.use('/business', businessRoutes);
+router.use('/chat', chatRoutes);
 router.use(staffOnly);
 
 router.use('/users', userRoutes);

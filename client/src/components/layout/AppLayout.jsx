@@ -1,12 +1,15 @@
 import { useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import clsx from 'clsx';
+import { useQuery } from '@tanstack/react-query';
+import { chatApi } from '@/api/endpoints.js';
 import { useAuth } from '@/features/auth/AuthContext.jsx';
 import { ROLE_LABEL, STAFF_ROLES } from '@/lib/status.js';
 import { Button } from '@/components/ui/Button.jsx';
 import { t } from '@/i18n/index.jsx';
 import { LanguageSwitch } from './LanguageSwitch.jsx';
 import { NotificationBell } from './NotificationBell.jsx';
+import { ChangePasswordModal } from '@/features/auth/ChangePasswordModal.jsx';
 
 const Icon = ({ d }) => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5 shrink-0">
@@ -32,6 +35,7 @@ const NAV = [
   { to: '/business/accounting', label: 'হিসাব ও ইনভয়েস', icon: 'wallet', roles: ['client'] },
   { to: '/business/messages', label: 'মেসেজ', icon: 'chat', roles: ['client'] },
   { to: '/', label: 'ওভারভিউ', icon: 'chart', end: true, roles: STAFF_ROLES },
+  { to: '/inbox', label: 'ইনবক্স', icon: 'chat', badge: 'chat' },
   { to: '/clients', label: 'ক্লায়েন্ট', icon: 'users', roles: STAFF_ROLES },
   { to: '/ad-accounts', label: 'অ্যাড অ্যাকাউন্ট', icon: 'megaphone', roles: STAFF_ROLES },
   { to: '/cycles', label: 'মাস / সাইকেল', icon: 'calendar', roles: STAFF_ROLES },
@@ -54,6 +58,9 @@ export const AppLayout = () => {
   const { user, logout, can } = useAuth();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
+  const [changingPassword, setChangingPassword] = useState(false);
+  const { data: chat } = useQuery({ queryKey: ['chat', 'unread'], queryFn: chatApi.unread, refetchInterval: 30_000 });
+  const chatUnread = chat?.unread || 0;
 
   const items = NAV.filter((item) => !item.roles || can(...item.roles));
   const initials = (user?.name || '?')
@@ -97,6 +104,9 @@ export const AppLayout = () => {
             >
               <Icon d={ICONS[item.icon]} />
               {t(item.label)}
+              {item.badge === 'chat' && chatUnread > 0 && (
+                <span className="ml-auto rounded-full bg-rose-600 px-1.5 text-[10px] font-semibold text-white">{chatUnread}</span>
+              )}
             </NavLink>
           ))}
         </nav>
@@ -124,7 +134,12 @@ export const AppLayout = () => {
             <NotificationBell />
             <LanguageSwitch className="hidden sm:inline-flex" />
             <div className="hidden h-6 w-px bg-slate-200 sm:block" />
-            <div className="flex items-center gap-2.5">
+            <button
+              type="button"
+              title={t('পাসওয়ার্ড পরিবর্তন')}
+              onClick={() => setChangingPassword(true)}
+              className="flex items-center gap-2.5 rounded-lg p-1 text-left hover:bg-slate-100"
+            >
               <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-100 text-xs font-semibold text-brand-700">
                 {initials}
               </span>
@@ -132,7 +147,7 @@ export const AppLayout = () => {
                 <p className="text-sm font-medium leading-tight text-slate-800">{user?.name}</p>
                 <p className="text-xs text-slate-500">{user?.client_name || t(ROLE_LABEL[user?.role]) || user?.role}</p>
               </div>
-            </div>
+            </button>
             <Button variant="secondary" size="sm" onClick={handleLogout}>
               লগআউট
             </Button>
@@ -142,6 +157,7 @@ export const AppLayout = () => {
         <main className="mx-auto w-full min-w-0 max-w-[1440px] flex-1 p-4 sm:p-6 lg:p-8">
           <Outlet />
         </main>
+        {changingPassword && <ChangePasswordModal onClose={() => setChangingPassword(false)} onChanged={handleLogout} />}
       </div>
     </div>
   );

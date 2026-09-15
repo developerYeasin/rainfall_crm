@@ -77,7 +77,9 @@ export const LanguageProvider = ({ children }) => {
     setLangState(next);
   }, []);
 
-  useEffect(() => applyDocumentLang(lang), [lang]);
+  useEffect(() => {
+    applyDocumentLang(lang);
+  }, [lang]);
 
   const value = useMemo(() => ({ lang, setLang }), [lang, setLang]);
   return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;

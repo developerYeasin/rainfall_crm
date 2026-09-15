@@ -10,7 +10,8 @@ export const registerSchema = z
   .object({
     name: z.string().min(2).max(120),
     email: z.string().email(),
-    password: z.string().min(6).max(72),
+    // Optional: when omitted the server generates one and returns it once.
+    password: z.string().min(6).max(72).optional(),
     role: z.enum(ALL_ROLES).default('viewer'),
     phone: z.string().max(40).optional().nullable(),
     client_id: z.coerce.number().int().positive().optional().nullable(),

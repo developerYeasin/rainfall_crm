@@ -25,6 +25,7 @@ const HomeRoute = () => {
   return user?.role === 'client' ? <Navigate to="/business" replace /> : <OverviewPage />;
 };
 
+const inbox = () => page(() => import('@/features/chat/InboxPage.jsx'), 'InboxPage');
 const workspace = () => page(() => import('@/features/business/BusinessWorkspace.jsx'), 'BusinessWorkspace');
 
 const businessTabs = [
@@ -50,6 +51,8 @@ export const router = createBrowserRouter([
     ),
     children: [
       { index: true, element: <HomeRoute /> },
+      { path: 'inbox', element: inbox() },
+      { path: 'inbox/:userId', element: inbox() },
       {
         path: 'business',
         element: <ProtectedRoute roles={['client']}>{workspace()}</ProtectedRoute>,

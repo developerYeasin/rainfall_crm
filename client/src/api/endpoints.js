@@ -18,6 +18,15 @@ export const clientsApi = {
   create: (payload) => api.post('/clients', payload).then(unwrap),
   update: ({ id, ...payload }) => api.patch(`/clients/${id}`, payload).then(unwrap),
   remove: (id) => api.delete(`/clients/${id}`),
+  logins: (id) => api.get(`/clients/${id}/logins`).then(unwrap),
+  issueLogin: (id, payload = {}) => api.post(`/clients/${id}/login`, payload).then(unwrap),
+};
+
+export const chatApi = {
+  contacts: () => api.get('/chat/contacts').then(unwrap),
+  unread: () => api.get('/chat/unread').then(unwrap),
+  thread: (userId) => api.get(`/chat/${userId}`).then(unwrap),
+  send: (userId, body) => api.post(`/chat/${userId}`, { body }).then(unwrap),
 };
 
 export const cyclesApi = {
@@ -95,6 +104,7 @@ export const usersApi = {
   list: (params) => api.get('/users', { params }).then(unwrapList),
   update: ({ id, ...payload }) => api.patch(`/users/${id}`, payload).then(unwrap),
   deactivate: (id) => api.delete(`/users/${id}`),
+  resetPassword: (id) => api.post(`/users/${id}/reset-password`).then(unwrap),
 };
 
 export const activityApi = {

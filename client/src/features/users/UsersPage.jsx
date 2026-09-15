@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/Button.jsx';
 import { Modal } from '@/components/ui/Modal.jsx';
 import { Field, Input, Select } from '@/components/ui/Field.jsx';
 import { Loading, ErrorState } from '@/components/ui/States.jsx';
+import { CredentialsModal } from '@/components/ui/CredentialsModal.jsx';
 import { ROLE_LABEL } from '@/lib/status.js';
 import { dateLabel } from '@/lib/format.js';
 import { useAuth } from '@/features/auth/AuthContext.jsx';
@@ -17,8 +18,8 @@ import { t } from '@/i18n/index.jsx';
 
 const ROLE_OPTIONS = Object.entries(ROLE_LABEL).map(([value, label]) => ({ value, label }));
 
-const UserForm = ({ open, onClose, onSubmit, saving }) => {
-  const [form, setForm] = useState({ name: '', email: '', password: '', role: 'viewer', phone: '', client_id: '' });
+const UserForm = ({ open, onClose, onSubmit, saving, isAdmin }) => {
+  const [form, setForm] = useState({ name: '', email: '', role: 'media_buyer', phone: '', client_id: '' });
   const set = (key) => (e) => setForm({ ...form, [key]: e.target.value });
   const isClient = form.role === 'client';
 
@@ -32,8 +33,8 @@ const UserForm = ({ open, onClose, onSubmit, saving }) => {
     <Modal
       open={open}
       onClose={onClose}
-      title="নতুন টিম মেম্বার"
-      subtitle="অ্যাকাউন্ট তৈরি করে রোল নির্ধারণ করুন"
+      title="নতুন অ্যাকাউন্ট"
+      subtitle="ইমেইল ও পাসওয়ার্ড স্বয়ংক্রিয়ভাবে তৈরি হয়ে ইমেইলে চলে যাবে"
       size="sm"
       footer={
         <>
@@ -42,8 +43,9 @@ const UserForm = ({ open, onClose, onSubmit, saving }) => {
           </Button>
           <Button
             loading={saving}
+            disabled={!form.name.trim() || !form.email.trim() || (isClient && !form.client_id)}
             onClick={() =>
-              onSubmit({ ...form, phone: form.phone || null, client_id: isClient ? form.client_id || null : null })
+              onSubmit({ ...form, phone: form.phone || null, client_id: isClient ? Number(form.client_id) || null : null })
             }
           >
             তৈরি করুন
@@ -55,14 +57,15 @@ const UserForm = ({ open, onClose, onSubmit, saving }) => {
         <Field label="নাম *">
           <Input value={form.name} onChange={set('name')} />
         </Field>
-        <Field label="ইমেইল *">
+        <Field label="লগইন ইমেইল *">
           <Input type="email" value={form.email} onChange={set('email')} />
         </Field>
-        <Field label="পাসওয়ার্ড *" hint="কমপক্ষে ৬ অক্ষর">
-          <Input type="password" value={form.password} onChange={set('password')} />
-        </Field>
         <Field label="রোল">
-          <Select value={form.role} onChange={set('role')} options={ROLE_OPTIONS} />
+          <Select
+            value={form.role}
+            onChange={set('role')}
+            options={isAdmin ? ROLE_OPTIONS : ROLE_OPTIONS.filter((o) => o.value !== 'admin')}
+          />
         </Field>
         {isClient && (
           <Field label="কোন ক্লায়েন্টের অ্যাকাউন্ট *" hint="লগইন করলে শুধু এই ক্লায়েন্টের ব্যবসার ডেটা দেখবে">
@@ -86,21 +89,30 @@ export const UsersPage = () => {
   const qc = useQueryClient();
   const { can, user: me } = useAuth();
   const [creating, setCreating] = useState(false);
+  const [issued, setIssued] = useState(null);
+  const [search, setSearch] = useState('');
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['users'],
-    queryFn: () => usersApi.list({ limit: 100 }),
+    queryFn: () => usersApi.list({ limit: 200 }),
   });
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ['users'] });
 
   const create = useMutation({
     mutationFn: authApi.register,
-    onSuccess: () => {
-      toast.success(t('টিম মেম্বার তৈরি হয়েছে'));
+    onSuccess: (result) => {
+      toast.success(t('অ্যাকাউন্ট তৈরি হয়েছে'));
       invalidate();
       setCreating(false);
+      setIssued({ name: result.user.name, credentials: result.credentials });
     },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const reset = useMutation({
+    mutationFn: usersApi.resetPassword,
+    onSuccess: (result) => setIssued({ name: result.user.name, credentials: result.credentials }),
     onError: (err) => toast.error(err.message),
   });
 
@@ -126,6 +138,11 @@ export const UsersPage = () => {
   if (error) return <ErrorState error={error} onRetry={refetch} />;
 
   const isAdmin = can('admin');
+  const canIssue = can('admin', 'manager');
+  const needle = search.trim().toLowerCase();
+  const rows = needle
+    ? data.rows.filter((r) => [r.name, r.email, r.client_name].some((v) => v?.toLowerCase().includes(needle)))
+    : data.rows;
 
   const columns = [
     {
@@ -170,42 +187,58 @@ export const UsersPage = () => {
       key: 'actions',
       header: '',
       align: 'right',
-      render: (row) =>
-        isAdmin &&
-        row.is_active &&
-        row.id !== me.id && (
-          <Button
-            size="sm"
-            variant="ghost"
-            className="text-rose-600"
-            onClick={() => window.confirm(t('এই অ্যাকাউন্ট নিষ্ক্রিয় করবেন?')) && deactivate.mutate(row.id)}
-          >
-            নিষ্ক্রিয় করুন
-          </Button>
-        ),
+      render: (row) => (
+        <div className="flex justify-end gap-1">
+          {canIssue && row.id !== me.id && (isAdmin || row.role !== 'admin') && (
+            <Button
+              size="sm"
+              variant="ghost"
+              loading={reset.isPending && reset.variables === row.id}
+              onClick={() => window.confirm(t('নতুন পাসওয়ার্ড তৈরি করবেন? পুরোনো পাসওয়ার্ড আর কাজ করবে না।')) && reset.mutate(row.id)}
+            >
+              পাসওয়ার্ড রিসেট
+            </Button>
+          )}
+          {isAdmin && row.is_active && row.id !== me.id && (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="text-rose-600"
+              onClick={() => window.confirm(t('এই অ্যাকাউন্ট নিষ্ক্রিয় করবেন?')) && deactivate.mutate(row.id)}
+            >
+              নিষ্ক্রিয় করুন
+            </Button>
+          )}
+        </div>
+      ),
     },
   ];
 
   return (
     <>
       <PageHeader
-        title="টিম"
-        subtitle="ইউজার অ্যাকাউন্ট ও রোল ম্যানেজমেন্ট"
-        actions={isAdmin && <Button onClick={() => setCreating(true)}>+ নতুন মেম্বার</Button>}
+        title="ইউজার ও রোল"
+        subtitle="টিম মেম্বার ও ক্লায়েন্টের লগইন — পাসওয়ার্ড স্বয়ংক্রিয়ভাবে তৈরি হয়"
+        actions={canIssue && <Button onClick={() => setCreating(true)}>+ নতুন অ্যাকাউন্ট</Button>}
       />
       <Card>
-        <CardHeader title="সব ইউজার" />
-        <Table columns={columns} rows={data.rows} empty="কোনো ইউজার নেই" />
+        <CardHeader
+          title="সব ইউজার"
+          actions={<Input className="w-56" placeholder="নাম বা ইমেইল খুঁজুন…" value={search} onChange={(e) => setSearch(e.target.value)} />}
+        />
+        <Table columns={columns} rows={rows} empty="কোনো ইউজার নেই" />
       </Card>
 
       {creating && (
         <UserForm
           open
+          isAdmin={isAdmin}
           saving={create.isPending}
           onClose={() => setCreating(false)}
           onSubmit={(payload) => create.mutate(payload)}
         />
       )}
+      <CredentialsModal credentials={issued?.credentials} name={issued?.name} onClose={() => setIssued(null)} />
     </>
   );
 };

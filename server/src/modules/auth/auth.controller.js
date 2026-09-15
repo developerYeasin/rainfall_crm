@@ -2,12 +2,14 @@ import { asyncHandler } from '../../utils/asyncHandler.js';
 import { ok, created } from '../../utils/response.js';
 import { authService } from './auth.service.js';
 import { logActivity } from '../../utils/activity.js';
+import { ApiError } from '../../utils/ApiError.js';
 
 export const authController = {
   register: asyncHandler(async (req, res) => {
-    const user = await authService.register(req.body);
-    await logActivity({ userId: req.user?.id, action: 'create', entityType: 'user', entityId: user.id, ip: req.ip });
-    created(res, user);
+    if (req.user.role !== 'admin' && req.body.role === 'admin') throw ApiError.forbidden('ম্যানেজার অ্যাডমিন অ্যাকাউন্ট তৈরি করতে পারে না');
+    const result = await authService.register(req.body);
+    await logActivity({ userId: req.user?.id, action: 'create', entityType: 'user', entityId: result.user.id, ip: req.ip });
+    created(res, result);
   }),
 
   login: asyncHandler(async (req, res) => {

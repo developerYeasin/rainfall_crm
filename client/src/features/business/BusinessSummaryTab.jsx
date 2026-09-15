@@ -48,7 +48,6 @@ export const BusinessSummaryTab = () => {
   const statusStrip = [
     ['delivered', sales.delivered_orders],
     ['confirmed', sales.pending_delivery_orders],
-    ['pre_order', pre.orders],
     ['returned', data.returns.orders],
     ['cancelled', data.cancelled.orders],
   ];
@@ -63,7 +62,6 @@ export const BusinessSummaryTab = () => {
   const alertColumns = [
     { key: 'name', header: 'প্রোডাক্ট' },
     { key: 'in_stock', header: 'স্টক', align: 'right', render: (r) => number(r.in_stock) },
-    { key: 'pre_order_qty', header: 'প্রি-অর্ডার', align: 'right', render: (r) => number(r.pre_order_qty) },
     {
       key: 'stock_status',
       header: '',
@@ -115,12 +113,11 @@ export const BusinessSummaryTab = () => {
           hint={t('কেনা দামে {value} · {n} প্রোডাক্ট', { value: currency(stock.value), n: number(stock.active_products) })}
         />
         <StatTile
-          label="প্রি-অর্ডার"
-          value={t('{n} পিস', { n: number(pre.qty) })}
-          hint={t('{orders} অর্ডার · {value} · অগ্রিম {advance}', {
-            orders: number(pre.orders),
-            value: currency(pre.value),
-            advance: currency(pre.advance),
+          label="মোট অর্ডার"
+          value={number(sales.orders)}
+          hint={t('ডেলিভারড {delivered} · ডেলিভারি বাকি {pending}', {
+            delivered: number(sales.delivered_orders),
+            pending: number(sales.pending_delivery_orders),
           })}
         />
         <StatTile
@@ -171,7 +168,7 @@ export const BusinessSummaryTab = () => {
             <table className="table">
               <tbody>
                 <Line label="সেলের পেমেন্ট পাওয়া" value={sales.cash_received} />
-                <Line label="প্রি-অর্ডারের অগ্রিম" value={pre.advance} />
+                {pre.advance > 0 && <Line label="অর্ডারের অগ্রিম পেমেন্ট" value={pre.advance} />}
                 <Line total label="মোট ক্যাশ ইন" value={cash.in} />
                 <Line sign="−" label="স্টক কেনা" value={-purchases.cost} hint={t('{n} পিস', { n: number(purchases.qty) })} />
                 <Line sign="−" label="অ্যাড স্পেন্ড" value={-marketing.ad_spend} />
@@ -228,7 +225,7 @@ export const BusinessSummaryTab = () => {
           <Table columns={topColumns} rows={data.top_products} empty="এখনো কোনো সেল নেই" />
         </Card>
         <Card>
-          <CardHeader title="স্টক অ্যালার্ট" subtitle="কম/শেষ স্টক ও প্রি-অর্ডারের ঘাটতি" />
+          <CardHeader title="স্টক অ্যালার্ট" subtitle="কম বা শেষ হয়ে যাওয়া স্টক" />
           <Table columns={alertColumns} rows={stock.alerts} empty="সব প্রোডাক্টে যথেষ্ট স্টক আছে" />
         </Card>
       </div>

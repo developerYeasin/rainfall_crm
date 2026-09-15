@@ -11,7 +11,8 @@ const router = Router();
 router.post('/login', authLimiter, validate(loginSchema), authController.login);
 router.post('/refresh', authLimiter, validate(refreshSchema), authController.refresh);
 router.post('/logout', authController.logout);
-router.post('/register', authenticate, authorize(ROLES.ADMIN), validate(registerSchema), authController.register);
+// Only admins and managers issue logins; managers cannot mint admins.
+router.post('/register', authenticate, authorize(ROLES.ADMIN, ROLES.MANAGER), validate(registerSchema), authController.register);
 router.get('/me', authenticate, authController.me);
 router.patch('/password', authenticate, validate(changePasswordSchema), authController.changePassword);
 

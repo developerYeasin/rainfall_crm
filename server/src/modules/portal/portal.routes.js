@@ -150,8 +150,13 @@ router.post(
       const client = await queryOne('SELECT name FROM clients WHERE id = ?', [req.clientId]);
       const preview = req.body.body.slice(0, 120);
       const data = { client: client.name, from: req.user.name, preview, kind };
+      // Every recipient also gets the message in their account mailbox.
+      const email = {
+        subject: kind === 'announcement' ? `Update from Rainfall Media — ${client.name}` : `New message from ${req.user.name} — ${client.name}`,
+        text: `${req.body.body}\n\n— ${req.user.name}\nReply in Rainfall CRM.`,
+      };
       if (isClient(req)) {
-        await notifyUsers(await clientStaffIds(req.clientId), { type: 'client_message', data, link: 'business:messages', clientId: req.clientId });
+        await notifyUsers(await clientStaffIds(req.clientId), { type: 'client_message', data, link: 'business:messages', clientId: req.clientId, email });
       } else {
         const staff = (await clientStaffIds(req.clientId)).filter((id) => id !== req.user.id);
         await notifyUsers(await clientUserIds(req.clientId), {
@@ -159,12 +164,9 @@ router.post(
           data,
           link: 'business:messages',
           clientId: req.clientId,
-          email:
-            kind === 'announcement'
-              ? { subject: `Update from Rainfall Media`, text: `${req.body.body}\n\n— ${req.user.name}, Rainfall Media` }
-              : null,
+          email,
         });
-        await notifyUsers(staff, { type: 'agency_message', data, link: 'business:messages', clientId: req.clientId });
+        await notifyUsers(staff, { type: 'agency_message', data, link: 'business:messages', clientId: req.clientId, email });
       }
     }
     created(res, message);

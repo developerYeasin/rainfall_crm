@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Field, Input, Select, Textarea } from '@/components/ui/Field.jsx';
+import { Checkbox, Field, Input, Select, Textarea } from '@/components/ui/Field.jsx';
 import { Modal } from '@/components/ui/Modal.jsx';
 import { Button } from '@/components/ui/Button.jsx';
 import { CLIENT_STATUS_LABEL } from '@/lib/status.js';
@@ -20,16 +20,20 @@ const EMPTY = {
 };
 
 export const ClientForm = ({ open, onClose, onSubmit, initial, saving }) => {
+  const isNew = !initial?.id;
   const [form, setForm] = useState({ ...EMPTY, ...(initial || {}) });
+  const [login, setLogin] = useState({ create: true, email: '' });
   const set = (key) => (e) => setForm({ ...form, [key]: e.target.value });
 
   const submit = (e) => {
     e.preventDefault();
-    onSubmit({
+    const payload = {
       ...form,
-      monthly_retainer: form.monthly_retainer === '' ? null : Number(form.monthly_retainer),
+      monthly_retainer: form.monthly_retainer === '' || form.monthly_retainer === null ? null : Number(form.monthly_retainer),
       onboarded_at: form.onboarded_at || null,
-    });
+    };
+    if (isNew) Object.assign(payload, { create_login: login.create, login_email: login.create ? login.email || null : null });
+    onSubmit(payload);
   };
 
   return (
@@ -80,6 +84,20 @@ export const ClientForm = ({ open, onClose, onSubmit, initial, saving }) => {
         <Field label="নোট" className="sm:col-span-2">
           <Textarea value={form.notes || ''} onChange={set('notes')} />
         </Field>
+        {isNew && (
+          <div className="space-y-3 rounded-xl border border-brand-100 bg-brand-50/50 p-4 sm:col-span-2">
+            <Checkbox
+              checked={login.create}
+              onChange={(e) => setLogin({ ...login, create: e.target.checked })}
+              label="ক্লায়েন্টের জন্য লগইন (ইমেইল ও পাসওয়ার্ড) তৈরি করুন"
+            />
+            {login.create && (
+              <Field label="লগইন ইমেইল" hint="খালি রাখলে উপরের ইমেইল ব্যবহার হবে। পাসওয়ার্ড স্বয়ংক্রিয়ভাবে তৈরি হয়ে ইমেইলে যাবে।">
+                <Input type="email" value={login.email} placeholder={form.email || 'client@example.com'} onChange={(e) => setLogin({ ...login, email: e.target.value })} />
+              </Field>
+            )}
+          </div>
+        )}
       </form>
     </Modal>
   );

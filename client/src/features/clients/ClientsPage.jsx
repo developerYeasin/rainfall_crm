@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/Button.jsx';
 import { Input, Select } from '@/components/ui/Field.jsx';
 import { Loading, ErrorState } from '@/components/ui/States.jsx';
 import { ClientForm } from './ClientForm.jsx';
+import { CredentialsModal } from '@/components/ui/CredentialsModal.jsx';
 import { CLIENT_STATUS_LABEL, CLIENT_STATUS_TONE } from '@/lib/status.js';
 import { currency, number } from '@/lib/format.js';
 import { useAuth } from '@/features/auth/AuthContext.jsx';
@@ -34,12 +35,16 @@ export const ClientsPage = () => {
       }),
   });
 
+  const [issued, setIssued] = useState(null);
+
   const save = useMutation({
     mutationFn: (payload) => (payload.id ? clientsApi.update(payload) : clientsApi.create(payload)),
-    onSuccess: () => {
+    onSuccess: (client) => {
       toast.success(t('ক্লায়েন্ট সংরক্ষিত হয়েছে'));
       qc.invalidateQueries({ queryKey: ['clients'] });
+      qc.invalidateQueries({ queryKey: ['users'] });
       setEditing(null);
+      if (client?.credentials) setIssued({ name: client.name, credentials: client.credentials });
     },
     onError: (err) => toast.error(err.message),
   });
@@ -130,7 +135,7 @@ export const ClientsPage = () => {
         title="ক্লায়েন্ট"
         subtitle="সব ক্লায়েন্টের তালিকা ও অনবোর্ডিং অবস্থা"
         actions={
-          can('admin', 'manager', 'media_buyer') && <Button onClick={() => setEditing({})}>+ নতুন ক্লায়েন্ট</Button>
+          can('admin', 'manager') && <Button onClick={() => setEditing({})}>+ নতুন ক্লায়েন্ট</Button>
         }
       />
 
@@ -169,6 +174,7 @@ export const ClientsPage = () => {
           onSubmit={(payload) => save.mutate(editing.id ? { ...payload, id: editing.id } : payload)}
         />
       )}
+      <CredentialsModal credentials={issued?.credentials} name={issued?.name} onClose={() => setIssued(null)} />
     </>
   );
 };

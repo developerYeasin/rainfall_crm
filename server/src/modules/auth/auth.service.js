@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import { config } from '../../config/index.js';
 import { query, queryOne } from '../../db/pool.js';
 import { ApiError } from '../../utils/ApiError.js';
+import { generatePassword, mailCredentials } from '../../utils/credentials.js';
 
 const hashToken = (token) => crypto.createHash('sha256').update(token).digest('hex');
 
@@ -26,11 +27,13 @@ const storeRefreshToken = async (userId, refreshToken) => {
 };
 
 export const authService = {
+  /** Creates a login. Without a password one is generated; the plain password is returned once and emailed. */
   async register(payload) {
     const exists = await queryOne('SELECT id FROM users WHERE email = ?', [payload.email]);
     if (exists) throw ApiError.conflict('এই ইমেইলে অ্যাকাউন্ট আছে');
 
-    const hash = await bcrypt.hash(payload.password, 10);
+    const password = payload.password || generatePassword();
+    const hash = await bcrypt.hash(password, 10);
     const rows = await query(
       'INSERT INTO users (name, email, password_hash, role, client_id, phone) VALUES (?, ?, ?, ?, ?, ?)',
       [
@@ -42,7 +45,19 @@ export const authService = {
         payload.phone ?? null,
       ],
     );
-    return this.getById(rows.insertId);
+    const user = await this.getById(rows.insertId);
+    await mailCredentials({ name: user.name, email: user.email, password });
+    return { user, credentials: { email: user.email, password } };
+  },
+
+  /** Issues a new generated password and signs the user out everywhere. */
+  async resetPassword(id) {
+    const user = await this.getById(id);
+    const password = generatePassword();
+    await query('UPDATE users SET password_hash = ? WHERE id = ?', [await bcrypt.hash(password, 10), id]);
+    await query('UPDATE refresh_tokens SET revoked_at = NOW() WHERE user_id = ? AND revoked_at IS NULL', [id]);
+    await mailCredentials({ name: user.name, email: user.email, password, reset: true });
+    return { user, credentials: { email: user.email, password } };
   },
 
   async getById(id) {
