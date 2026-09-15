@@ -43,6 +43,8 @@ export const orderSchema = z.object({
   customer_name: nullableString(120),
   customer_phone: nullableString(40),
   note: nullableString(500),
+  /** Which ad / campaign brought the sale, when known. */
+  source: nullableString(160),
 });
 export const updateOrderSchema = orderSchema.partial();
 

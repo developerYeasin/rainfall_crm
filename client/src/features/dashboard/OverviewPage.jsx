@@ -8,6 +8,8 @@ import { Table } from '@/components/ui/Table.jsx';
 import { Badge } from '@/components/ui/Badge.jsx';
 import { Loading, ErrorState } from '@/components/ui/States.jsx';
 import { currency, number, percent, roas } from '@/lib/format.js';
+import { useAuth } from '@/features/auth/AuthContext.jsx';
+import { ActivityFeed } from './ActivityFeed.jsx';
 import { t, tData } from '@/i18n/index.jsx';
 
 const achievementTone = (pct) => {
@@ -18,6 +20,7 @@ const achievementTone = (pct) => {
 };
 
 export const OverviewPage = () => {
+  const { can } = useAuth();
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['dashboard', 'overview'],
     queryFn: dashboardApi.overview,
@@ -64,6 +67,12 @@ export const OverviewPage = () => {
         <CardHeader title="চলমান সাইকেল" subtitle="প্রতিটি ক্লায়েন্টের চলতি মাসের অবস্থা" />
         <Table columns={columns} rows={data.running_cycles} empty="কোনো চলমান সাইকেল নেই" rowKey={(r) => r.cycle_id} />
       </Card>
+
+      {can('admin') && (
+        <div className="mt-5">
+          <ActivityFeed />
+        </div>
+      )}
     </>
   );
 };

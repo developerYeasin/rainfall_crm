@@ -17,9 +17,10 @@ const listSchema = z.object({
   user_id: z.coerce.number().int().positive().optional(),
 });
 
+// Agency-wide audit trail spans every client, so it is admin-only.
 router.get(
   '/',
-  authorize(ROLES.ADMIN, ROLES.MANAGER),
+  authorize(ROLES.ADMIN),
   validate(listSchema, 'query'),
   asyncHandler(async (req, res) => {
     const filters = req.validatedQuery;

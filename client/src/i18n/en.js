@@ -1,3 +1,5 @@
+import { EN_AGENCY } from './en.agency.js';
+
 /** English translations keyed by the original Bangla text. */
 export const EN = {
   // Layout / auth
@@ -539,3 +541,6 @@ export const EN = {
   'টাস্কের নাম দিন': 'Enter the task name',
   'এন্ট্রি পাওয়া যায়নি': 'Entry not found',
 };
+
+// Earlier keys win, so a shared word keeps the meaning it already had across the app.
+for (const [key, value] of Object.entries(EN_AGENCY)) if (!(key in EN)) EN[key] = value;

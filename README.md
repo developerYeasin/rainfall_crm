@@ -162,6 +162,62 @@ server/src/
 
 ---
 
+## Agency modules (migration `003_agency.sql`)
+
+### Tenant isolation
+All scoping lives in `server/src/utils/access.js`:
+
+| Role | Can reach |
+|---|---|
+| `admin` | every client |
+| `manager`, `media_buyer`, `designer`, `viewer` | only clients they are assigned to (`client_staff`) or account-manage |
+| `client` | only `users.client_id`, and a `?client_id=` in the URL is ignored |
+
+Out-of-scope ids return **404**, so ids can't be probed. Every client-owned route runs through
+`guardClient` / `guardCycle` / `guardCycleRow`, `resolveClientParam` (`/business/*`) or `scopeSql` (lists).
+Assign staff on the client page ("Assigned team") or `PUT /clients/:id/staff`. Creating a client or
+assigning an ad account adds the person to that client automatically.
+
+### What was added
+
+| Area | Client dashboard (`/business/…`) | Agency (`/…`) |
+|---|---|---|
+| Ads | `ads`: spend, results, CTR, CPC, ROAS, daily/weekly/monthly chart, campaign → ad-set table, ad spend vs. real sales | `ad-accounts`: connect accounts, sync now, reassign buyer, spend alerts (overspend / underspend / not delivering) |
+| Sales & stock | orders now take a **source** (ad/campaign); a sale leaving a product low/out of stock notifies client + team | client grid shows this month's ad spend, sales, fees due, stock alerts |
+| Accounting | `accounting`: monthly P&L (sales − product cost − ad spend − agency fee − expenses), invoices, **Excel** (year) and **PDF** (month) export | `finance`: invoices, payments, dues; admin-only agency expenses, agency P&L, Excel export |
+| Communication | `messages`: thread with the agency; staff can post announcements (emailed) and internal notes (hidden from client) | notification bell for every role |
+| Team | — | `tasks` (assign, due dates, overdue alerts), `team` (clients, accounts, open/overdue tasks per person) |
+
+Ad spend is never counted twice: when a month has synced ad-account data it is used, otherwise the manual performance tracker.
+
+### Meta Marketing API
+1. Create a System User token in the agency's Business Manager with `ads_read`, and set `META_ACCESS_TOKEN`
+   (or paste a per-account token when connecting an account; it's stored AES-256-GCM encrypted with `CREDENTIALS_KEY`).
+2. Ad accounts → Connect account → ad account id (`act_…`).
+3. The scheduler pulls account, campaign and ad-set insights every `AD_SYNC_INTERVAL_HOURS` (30-day backfill,
+   then the last 3 days each run because platforms revise recent days).
+
+### Google Ads API
+Set `GOOGLE_ADS_DEVELOPER_TOKEN`, `GOOGLE_ADS_CLIENT_ID`, `GOOGLE_ADS_CLIENT_SECRET`, `GOOGLE_ADS_REFRESH_TOKEN`
+(OAuth refresh token of a login with access, scope `https://www.googleapis.com/auth/adwords`) and
+`GOOGLE_ADS_LOGIN_CUSTOMER_ID` (the agency MCC id). Connect an account with platform **Google Ads** and the
+customer id (`123-456-7890`). Customer, campaign and ad-group metrics are synced; "results" = conversions.
+
+### TikTok Business API
+Set `TIKTOK_ACCESS_TOKEN` (long-lived token of the agency's TikTok for Business app, with reporting permission),
+or paste a token per account. Connect with platform **TikTok Ads** and the advertiser id. Advertiser, campaign
+and ad-group metrics are synced; "results" = conversions, value = total complete payment value.
+
+### Background jobs & email
+`server/src/jobs/scheduler.js` runs in the API process: ad sync, invoice due/overdue reminders, overdue tasks.
+Set `JOBS_ENABLED=false` on extra instances. Email goes out for new invoices, due reminders and announcements
+when `SMTP_HOST` is set; otherwise it is only logged.
+
+Seed adds a second client **Glow Cosmetics** (`glow@client.com` / `Client@123`) with nobody assigned, plus a
+sample ad account with 30 days of insights for the demo client. Use them to check isolation.
+
+---
+
 ## ফ্রন্টএন্ড স্ট্রাকচার
 
 ```

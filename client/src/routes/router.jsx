@@ -1,26 +1,23 @@
+import { lazy, Suspense } from 'react';
 import { createBrowserRouter, Navigate, Outlet } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/AppLayout.jsx';
 import { ProtectedRoute } from './ProtectedRoute.jsx';
 import { LoginPage } from '@/features/auth/LoginPage.jsx';
 import { useAuth } from '@/features/auth/AuthContext.jsx';
-import { OverviewPage } from '@/features/dashboard/OverviewPage.jsx';
-import { ClientsPage } from '@/features/clients/ClientsPage.jsx';
-import { ClientDetailPage } from '@/features/clients/ClientDetailPage.jsx';
-import { CyclesPage } from '@/features/cycles/CyclesPage.jsx';
-import { CycleWorkspace } from '@/features/cycles/CycleWorkspace.jsx';
-import { ProjectionTab } from '@/features/cycles/ProjectionTab.jsx';
-import { PerformanceTab } from '@/features/performance/PerformanceTab.jsx';
-import { ControlTab } from '@/features/control/ControlTab.jsx';
-import { TasksTab } from '@/features/tasks/TasksTab.jsx';
-import { ContentTab } from '@/features/content/ContentTab.jsx';
-import { SummaryTab } from '@/features/dashboard/SummaryTab.jsx';
-import { UsersPage } from '@/features/users/UsersPage.jsx';
-import { BusinessWorkspace } from '@/features/business/BusinessWorkspace.jsx';
-import { BusinessSummaryTab } from '@/features/business/BusinessSummaryTab.jsx';
-import { StockTab } from '@/features/business/StockTab.jsx';
-import { OrdersTab } from '@/features/business/OrdersTab.jsx';
-import { ExpensesTab } from '@/features/business/ExpensesTab.jsx';
+import { Loading } from '@/components/ui/States.jsx';
 import { STAFF_ROLES } from '@/lib/status.js';
+
+/** Pages load on demand so a client login never downloads the agency screens (and charts load once needed). */
+const page = (loader, name) => {
+  const Component = lazy(() => loader().then((m) => ({ default: m[name] })));
+  return (
+    <Suspense fallback={<Loading />}>
+      <Component />
+    </Suspense>
+  );
+};
+
+const OverviewPage = () => page(() => import('@/features/dashboard/OverviewPage.jsx'), 'OverviewPage');
 
 /** Client logins land on their own business portal; the team lands on the agency overview. */
 const HomeRoute = () => {
@@ -28,12 +25,19 @@ const HomeRoute = () => {
   return user?.role === 'client' ? <Navigate to="/business" replace /> : <OverviewPage />;
 };
 
+const workspace = () => page(() => import('@/features/business/BusinessWorkspace.jsx'), 'BusinessWorkspace');
+
 const businessTabs = [
-  { index: true, element: <BusinessSummaryTab /> },
-  { path: 'stock', element: <StockTab /> },
-  { path: 'orders', element: <OrdersTab /> },
-  { path: 'expenses', element: <ExpensesTab /> },
+  { index: true, element: page(() => import('@/features/business/BusinessSummaryTab.jsx'), 'BusinessSummaryTab') },
+  { path: 'ads', element: page(() => import('@/features/ads/AdsTab.jsx'), 'AdsTab') },
+  { path: 'orders', element: page(() => import('@/features/business/OrdersTab.jsx'), 'OrdersTab') },
+  { path: 'stock', element: page(() => import('@/features/business/StockTab.jsx'), 'StockTab') },
+  { path: 'expenses', element: page(() => import('@/features/business/ExpensesTab.jsx'), 'ExpensesTab') },
+  { path: 'accounting', element: page(() => import('@/features/accounting/AccountingTab.jsx'), 'AccountingTab') },
+  { path: 'messages', element: page(() => import('@/features/messages/MessagesTab.jsx'), 'MessagesTab') },
 ];
+
+const leadsOnly = (element) => <ProtectedRoute roles={['admin', 'manager']}>{element}</ProtectedRoute>;
 
 export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
@@ -48,11 +52,7 @@ export const router = createBrowserRouter([
       { index: true, element: <HomeRoute /> },
       {
         path: 'business',
-        element: (
-          <ProtectedRoute roles={['client']}>
-            <BusinessWorkspace />
-          </ProtectedRoute>
-        ),
+        element: <ProtectedRoute roles={['client']}>{workspace()}</ProtectedRoute>,
         children: businessTabs,
       },
       {
@@ -63,30 +63,27 @@ export const router = createBrowserRouter([
           </ProtectedRoute>
         ),
         children: [
-          { path: 'clients', element: <ClientsPage /> },
-          { path: 'clients/:id', element: <ClientDetailPage /> },
-          { path: 'clients/:id/business', element: <BusinessWorkspace />, children: businessTabs },
-          { path: 'cycles', element: <CyclesPage /> },
+          { path: 'clients', element: page(() => import('@/features/clients/ClientsPage.jsx'), 'ClientsPage') },
+          { path: 'clients/:id', element: page(() => import('@/features/clients/ClientDetailPage.jsx'), 'ClientDetailPage') },
+          { path: 'clients/:id/business', element: workspace(), children: businessTabs },
+          { path: 'cycles', element: page(() => import('@/features/cycles/CyclesPage.jsx'), 'CyclesPage') },
           {
             path: 'cycles/:id',
-            element: <CycleWorkspace />,
+            element: page(() => import('@/features/cycles/CycleWorkspace.jsx'), 'CycleWorkspace'),
             children: [
-              { index: true, element: <ProjectionTab /> },
-              { path: 'performance', element: <PerformanceTab /> },
-              { path: 'control', element: <ControlTab /> },
-              { path: 'tasks', element: <TasksTab /> },
-              { path: 'content', element: <ContentTab /> },
-              { path: 'summary', element: <SummaryTab /> },
+              { index: true, element: page(() => import('@/features/cycles/ProjectionTab.jsx'), 'ProjectionTab') },
+              { path: 'performance', element: page(() => import('@/features/performance/PerformanceTab.jsx'), 'PerformanceTab') },
+              { path: 'control', element: page(() => import('@/features/control/ControlTab.jsx'), 'ControlTab') },
+              { path: 'tasks', element: page(() => import('@/features/tasks/TasksTab.jsx'), 'TasksTab') },
+              { path: 'content', element: page(() => import('@/features/content/ContentTab.jsx'), 'ContentTab') },
+              { path: 'summary', element: page(() => import('@/features/dashboard/SummaryTab.jsx'), 'SummaryTab') },
             ],
           },
-          {
-            path: 'users',
-            element: (
-              <ProtectedRoute roles={['admin', 'manager']}>
-                <UsersPage />
-              </ProtectedRoute>
-            ),
-          },
+          { path: 'ad-accounts', element: page(() => import('@/features/ads/AdAccountsPage.jsx'), 'AdAccountsPage') },
+          { path: 'tasks', element: page(() => import('@/features/agencyTasks/AgencyTasksPage.jsx'), 'AgencyTasksPage') },
+          { path: 'finance', element: leadsOnly(page(() => import('@/features/finance/FinancePage.jsx'), 'FinancePage')) },
+          { path: 'team', element: leadsOnly(page(() => import('@/features/team/TeamPage.jsx'), 'TeamPage')) },
+          { path: 'users', element: leadsOnly(page(() => import('@/features/users/UsersPage.jsx'), 'UsersPage')) },
         ],
       },
       { path: '*', element: <Navigate to="/" replace /> },

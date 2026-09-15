@@ -33,6 +33,40 @@ export const config = {
     accessExpires: process.env.JWT_ACCESS_EXPIRES || '2h',
     refreshExpires: process.env.JWT_REFRESH_EXPIRES || '30d',
   },
+  /** Encrypts stored ad-account tokens. Falls back to the JWT secret outside production. */
+  credentialsKey:
+    process.env.CREDENTIALS_KEY ||
+    (process.env.NODE_ENV === 'production' ? required('CREDENTIALS_KEY') : required('JWT_ACCESS_SECRET')),
+  meta: {
+    apiVersion: process.env.META_API_VERSION || 'v21.0',
+    /** Business-partner system-user token, used for accounts without their own token. */
+    accessToken: process.env.META_ACCESS_TOKEN || null,
+  },
+  google: {
+    apiVersion: process.env.GOOGLE_ADS_API_VERSION || 'v20',
+    developerToken: process.env.GOOGLE_ADS_DEVELOPER_TOKEN || null,
+    clientId: process.env.GOOGLE_ADS_CLIENT_ID || null,
+    clientSecret: process.env.GOOGLE_ADS_CLIENT_SECRET || null,
+    /** Refresh token of the agency login; per-account tokens override it. */
+    refreshToken: process.env.GOOGLE_ADS_REFRESH_TOKEN || null,
+    /** The agency's manager (MCC) account id, required when accessing client accounts through it. */
+    loginCustomerId: process.env.GOOGLE_ADS_LOGIN_CUSTOMER_ID || null,
+  },
+  tiktok: {
+    accessToken: process.env.TIKTOK_ACCESS_TOKEN || null,
+  },
+  jobs: {
+    enabled: process.env.JOBS_ENABLED !== 'false',
+    adSyncHours: Number(process.env.AD_SYNC_INTERVAL_HOURS || 3),
+    appUrl: process.env.APP_URL || 'http://localhost:5173',
+  },
+  smtp: {
+    host: process.env.SMTP_HOST || null,
+    port: Number(process.env.SMTP_PORT || 587),
+    user: process.env.SMTP_USER || null,
+    password: process.env.SMTP_PASSWORD || null,
+    from: process.env.SMTP_FROM || 'Rainfall Media <no-reply@rainfall.com>',
+  },
   seed: {
     adminEmail: process.env.SEED_ADMIN_EMAIL || 'admin@rainfall.com',
     adminPassword: process.env.SEED_ADMIN_PASSWORD || 'Admin@123',

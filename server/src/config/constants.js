@@ -24,7 +24,14 @@ export const ORDER_STATUS = ['pre_order', 'confirmed', 'delivered', 'returned', 
 export const SOLD_STATUS = ['confirmed', 'delivered'];
 export const EXPENSE_CATEGORIES = ['marketing', 'delivery', 'packaging', 'salary', 'rent', 'utility', 'other'];
 
-export const CLIENT_STATUS = ['lead', 'onboarding', 'active', 'paused', 'churned'];
+export const AD_PLATFORMS = ['meta', 'google', 'tiktok'];
+export const AGENCY_EXPENSE_CATEGORIES = ['salary', 'software', 'rent', 'utility', 'tax', 'marketing', 'other'];
+export const TASK_PRIORITIES = ['low', 'normal', 'high'];
+export const MESSAGE_KINDS = ['message', 'announcement', 'note'];
+/** Roles that run agency finance (invoices, payments). Agency P&L itself is admin-only. */
+export const FINANCE_ROLES = [ROLES.ADMIN, ROLES.MANAGER];
+
+export const CLIENT_STATUS =['lead', 'onboarding', 'active', 'paused', 'churned'];
 export const CYCLE_STATUS = ['planned', 'running', 'closed'];
 export const PLATFORMS = ['Facebook', 'Instagram', 'Google', 'TikTok', 'YouTube', 'LinkedIn', 'Other'];
 export const CONTENT_TYPES = ['পোস্ট', 'রিল/ভিডিও', 'স্টোরি', 'কারোসেল', 'ব্লগ', 'অ্যাড ক্রিয়েটিভ'];

@@ -5,6 +5,7 @@ import { performanceRepository } from '../performance/performance.repository.js'
 import { performanceService } from '../performance/performance.service.js';
 import { summarisePerformance, round, safeDiv } from '../../utils/metrics.js';
 import { query } from '../../db/pool.js';
+import { scopeSql } from '../../utils/access.js';
 
 export const dashboardService = {
   /** "ড্যাশবোর্ড সামারি" — every metric row, plus the weekly status strip. */
@@ -51,13 +52,15 @@ export const dashboardService = {
   },
 
   /** Agency-wide roll-up across every client with a running cycle. */
-  async overview() {
+  async overview(scope = null) {
+    const clientScope = scopeSql('id', scope);
+    const cycleScope = scopeSql('cy.client_id', scope);
     const [clientStats] = await query(
       `SELECT COUNT(*) AS total_clients,
               SUM(status = 'active') AS active_clients,
               SUM(status = 'onboarding') AS onboarding_clients,
               SUM(status = 'lead') AS leads
-       FROM clients`,
+       FROM clients ${clientScope ? `WHERE ${clientScope}` : ''}`,
     );
 
     const [totals] = await query(
@@ -66,7 +69,7 @@ export const dashboardService = {
               COALESCE(SUM(p.conversions), 0) AS conversions
        FROM performance_entries p
        JOIN cycles cy ON cy.id = p.cycle_id
-       WHERE cy.status = 'running'`,
+       WHERE cy.status = 'running' ${cycleScope ? `AND ${cycleScope}` : ''}`,
     );
 
     const perClient = await query(
@@ -78,7 +81,7 @@ export const dashboardService = {
        FROM cycles cy
        JOIN clients c ON c.id = cy.client_id
        LEFT JOIN performance_entries p ON p.cycle_id = cy.id
-       WHERE cy.status = 'running'
+       WHERE cy.status = 'running' ${cycleScope ? `AND ${cycleScope}` : ''}
        GROUP BY cy.id
        ORDER BY revenue DESC`,
     );

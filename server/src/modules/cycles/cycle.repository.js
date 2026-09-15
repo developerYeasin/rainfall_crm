@@ -1,5 +1,6 @@
 import { query, queryOne } from '../../db/pool.js';
 import { buildWhere, buildPagination, buildOrder } from '../../utils/sql.js';
+import { andWhere, scopeSql } from '../../utils/access.js';
 
 const SORTABLE = ['cy.id', 'cy.month_start', 'cy.created_at', 'cy.monthly_budget'];
 
@@ -12,10 +13,12 @@ const BASE_SELECT = `
 export const cycleRepository = {
   async list(filters) {
     const { limit, offset, page } = buildPagination(filters);
-    const { sql: where, params } = buildWhere([
+    const built = buildWhere([
       ['cy.client_id = ?', filters.client_id],
       ['cy.status = ?', filters.status],
     ]);
+    const where = andWhere(built.sql, scopeSql('cy.client_id', filters.scope ?? null));
+    const { params } = built;
     const order = buildOrder(filters.sortBy, filters.sortDir, SORTABLE, 'cy.month_start');
     const rows = await query(`${BASE_SELECT} ${where} ${order} LIMIT ${limit} OFFSET ${offset}`, params);
     const { total } = await queryOne(`SELECT COUNT(*) AS total FROM cycles cy ${where}`, params);

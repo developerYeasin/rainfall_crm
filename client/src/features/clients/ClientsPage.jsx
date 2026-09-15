@@ -12,7 +12,7 @@ import { Input, Select } from '@/components/ui/Field.jsx';
 import { Loading, ErrorState } from '@/components/ui/States.jsx';
 import { ClientForm } from './ClientForm.jsx';
 import { CLIENT_STATUS_LABEL, CLIENT_STATUS_TONE } from '@/lib/status.js';
-import { currency, dateLabel, number } from '@/lib/format.js';
+import { currency, number } from '@/lib/format.js';
 import { useAuth } from '@/features/auth/AuthContext.jsx';
 import { t } from '@/i18n/index.jsx';
 
@@ -63,24 +63,47 @@ export const ClientsPage = () => {
       key: 'name',
       header: 'ক্লায়েন্ট',
       render: (row) => (
-        <div>
+        <div className="min-w-[180px] max-w-[240px] whitespace-normal">
           <Link to={`/clients/${row.id}`} className="font-medium text-brand-700 hover:underline">
             {row.name}
           </Link>
-          {row.company && <p className="text-xs text-slate-500">{row.company}</p>}
+          <p className="text-xs text-slate-500">
+            {[row.company, row.industry].filter(Boolean).join(' · ')}
+            {' · '}
+            <Link to={`/clients/${row.id}/business`} className="text-brand-600 hover:underline">
+              {t('ড্যাশবোর্ড')}
+            </Link>
+          </p>
         </div>
       ),
     },
-    { key: 'contact_person', header: 'যোগাযোগ', render: (r) => r.contact_person || '—' },
-    { key: 'industry', header: 'ইন্ডাস্ট্রি', render: (r) => r.industry || '—' },
     {
       key: 'status',
       header: 'স্ট্যাটাস',
       render: (r) => <Badge tone={CLIENT_STATUS_TONE[r.status]}>{CLIENT_STATUS_LABEL[r.status]}</Badge>,
     },
-    { key: 'cycles_count', header: 'সাইকেল', align: 'right', render: (r) => number(r.cycles_count) },
-    { key: 'monthly_retainer', header: 'রিটেইনার', align: 'right', render: (r) => currency(r.monthly_retainer) },
-    { key: 'onboarded_at', header: 'অনবোর্ডিং', render: (r) => dateLabel(r.onboarded_at) },
+    { key: 'month_ad_spend', header: 'এই মাসের অ্যাড স্পেন্ড', align: 'right', render: (r) => currency(r.month_ad_spend) },
+    { key: 'month_sales', header: 'এই মাসের সেল', align: 'right', render: (r) => currency(r.month_sales) },
+    {
+      key: 'dues',
+      header: 'ফি বাকি',
+      align: 'right',
+      render: (r) => <span className={r.dues > 0 ? 'font-medium text-rose-600' : undefined}>{currency(r.dues)}</span>,
+    },
+    {
+      key: 'low_stock',
+      header: 'স্টক অ্যালার্ট',
+      align: 'right',
+      render: (r) =>
+        r.low_stock > 0 ? (
+          <Link to={`/clients/${r.id}/business/stock`}>
+            <Badge tone="warning">{t('{n} প্রোডাক্ট', { n: number(r.low_stock) })}</Badge>
+          </Link>
+        ) : (
+          '—'
+        ),
+    },
+    { key: 'account_manager_name', header: 'অ্যাকাউন্ট ম্যানেজার', render: (r) => r.account_manager_name || '—' },
     {
       key: 'actions',
       header: '',

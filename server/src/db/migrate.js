@@ -18,12 +18,18 @@ const ensureTable = async (conn) => {
   `);
 };
 
-/** Splits a .sql file into statements. Migrations here contain no routines/delimiters. */
+/**
+ * Splits a .sql file into statements. Migrations here contain no routines/delimiters.
+ * Full-line `--` comments are stripped first, so a comment above a statement never swallows it.
+ */
 const splitStatements = (sql) =>
   sql
+    .split('\n')
+    .filter((line) => !line.trim().startsWith('--'))
+    .join('\n')
     .split(/;\s*\n/)
-    .map((s) => s.trim())
-    .filter((s) => s.length && !s.startsWith('--'));
+    .map((s) => s.trim().replace(/;$/, ''))
+    .filter(Boolean);
 
 export const runMigrations = async () => {
   const conn = await pool.getConnection();

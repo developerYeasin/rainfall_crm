@@ -1,13 +1,15 @@
 import { Router } from 'express';
-import { z } from 'zod';
 import { validate } from '../../middlewares/validate.js';
 import { authorize } from '../../middlewares/auth.js';
 import { asyncHandler } from '../../utils/asyncHandler.js';
 import { ok, created, noContent } from '../../utils/response.js';
-import { ApiError } from '../../utils/ApiError.js';
 import { logActivity } from '../../utils/activity.js';
-import { ROLES, BUSINESS_WRITE_ROLES } from '../../config/constants.js';
+import { resolveClientParam } from '../../utils/access.js';
+import { clientStaffIds, clientUserIds, notifyUsers } from '../../utils/notify.js';
+import { toDateOnly } from '../../utils/date.js';
+import { BUSINESS_WRITE_ROLES } from '../../config/constants.js';
 import { businessService as service } from './business.service.js';
+import portalRoutes from '../portal/portal.routes.js';
 import {
   rangeSchema,
   productSchema,
@@ -24,31 +26,28 @@ import {
 
 const router = Router();
 
-const clientQuerySchema = z.object({ client_id: z.coerce.number().int().positive() });
-
-/**
- * Pins every request to one client. A client login is ALWAYS locked to its own
- * client_id (anything passed in the query is ignored); staff pick via ?client_id=.
- */
-const resolveClient = asyncHandler(async (req, res, next) => {
-  if (req.user.role === ROLES.CLIENT) {
-    if (!req.user.client_id) throw ApiError.forbidden('এই অ্যাকাউন্টে কোনো ক্লায়েন্ট যুক্ত নেই');
-    req.clientId = req.user.client_id;
-  } else {
-    const parsed = clientQuerySchema.safeParse(req.query);
-    if (!parsed.success) throw ApiError.badRequest('client_id দিন');
-    req.clientId = parsed.data.client_id;
-  }
-  await service.resolveClient(req.clientId);
-  next();
-});
-
 const canWrite = authorize(...BUSINESS_WRITE_ROLES);
 
-const audit = (req, action, entityType, entityId) =>
-  logActivity({ userId: req.user.id, action, entityType, entityId, meta: { client_id: req.clientId }, ip: req.ip });
+const audit = (req, action, entityType, entityId, meta = {}) =>
+  logActivity({ userId: req.user.id, action, entityType, entityId, meta: { client_id: req.clientId, ...meta }, ip: req.ip });
 
-router.use(resolveClient);
+/** A sale that leaves a product low or out of stock alerts the client and the assigned team (once a day). */
+const alertLowStock = async (req, productId) => {
+  const product = await service.getProduct(req.clientId, productId);
+  if (product.stock_status === 'ok') return;
+  const recipients = [...(await clientUserIds(req.clientId)), ...(await clientStaffIds(req.clientId))];
+  await notifyUsers(recipients, {
+    type: 'low_stock',
+    data: { product: product.name, in_stock: product.in_stock, status: product.stock_status },
+    link: 'business:stock',
+    clientId: req.clientId,
+    dedupeKey: `low-stock-${product.id}-${product.stock_status}-${toDateOnly(new Date())}`,
+  });
+};
+
+// Staff pass ?client_id= and must be assigned; a client login is always pinned to its own client.
+router.use(resolveClientParam);
+router.use('/', portalRoutes);
 
 router.get('/profile', asyncHandler(async (req, res) => ok(res, await service.resolveClient(req.clientId))));
 router.get(
@@ -102,7 +101,7 @@ router.post(
   validate(purchaseSchema),
   asyncHandler(async (req, res) => {
     const purchase = await service.createPurchase(req.clientId, req.body, req.user.id);
-    await audit(req, 'create', 'stock_purchase', purchase.id);
+    await audit(req, 'create', 'stock_purchase', purchase.id, { product_id: purchase.product_id, qty: purchase.qty });
     created(res, purchase);
   }),
 );
@@ -132,7 +131,8 @@ router.post(
   validate(orderSchema),
   asyncHandler(async (req, res) => {
     const order = await service.createOrder(req.clientId, req.body, req.user.id);
-    await audit(req, 'create', 'order', order.id);
+    await audit(req, 'create', 'order', order.id, { status: order.status, qty: order.qty, amount: order.amount });
+    await alertLowStock(req, order.product_id);
     created(res, order);
   }),
 );
@@ -143,7 +143,8 @@ router.patch(
   validate(updateOrderSchema),
   asyncHandler(async (req, res) => {
     const order = await service.updateOrder(req.clientId, req.params.id, req.body);
-    await audit(req, 'update', 'order', order.id);
+    await audit(req, 'update', 'order', order.id, { changes: req.body });
+    await alertLowStock(req, order.product_id);
     ok(res, order);
   }),
 );
@@ -184,7 +185,7 @@ router.patch(
   validate(updateExpenseSchema),
   asyncHandler(async (req, res) => {
     const expense = await service.updateExpense(req.clientId, req.params.id, req.body);
-    await audit(req, 'update', 'expense', expense.id);
+    await audit(req, 'update', 'expense', expense.id, { changes: req.body });
     ok(res, expense);
   }),
 );

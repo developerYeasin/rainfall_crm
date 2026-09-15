@@ -6,6 +6,7 @@ import { ROLE_LABEL, STAFF_ROLES } from '@/lib/status.js';
 import { Button } from '@/components/ui/Button.jsx';
 import { t } from '@/i18n/index.jsx';
 import { LanguageSwitch } from './LanguageSwitch.jsx';
+import { NotificationBell } from './NotificationBell.jsx';
 
 const Icon = ({ d }) => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5 shrink-0">
@@ -18,15 +19,26 @@ const ICONS = {
   chart: 'M4 20V10m6 10V4m6 16v-7m4 7H2',
   users: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm13 10v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75',
   calendar: 'M8 2v4m8-4v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z',
+  megaphone: 'M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1Zm13-3a5 5 0 0 1 0 8m3-11a9 9 0 0 1 0 14',
+  wallet: 'M3 7a2 2 0 0 1 2-2h13v4M3 7v10a2 2 0 0 0 2 2h15V9H5a2 2 0 0 1-2-2Zm14 7h.01',
+  chat: 'M21 12a8 8 0 0 1-11.6 7.1L3 21l1.9-6.4A8 8 0 1 1 21 12Z',
+  check: 'M9 11l3 3 8-8M20 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11',
   settings: 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm7.4-3a7.4 7.4 0 0 0-.1-1.3l2-1.6-2-3.4-2.4 1a7.5 7.5 0 0 0-2.2-1.3L14.3 3h-4l-.4 2.4a7.5 7.5 0 0 0-2.2 1.3l-2.4-1-2 3.4 2 1.6a7.4 7.4 0 0 0 0 2.6l-2 1.6 2 3.4 2.4-1a7.5 7.5 0 0 0 2.2 1.3l.4 2.4h4l.4-2.4a7.5 7.5 0 0 0 2.2-1.3l2.4 1 2-3.4-2-1.6c.1-.4.1-.9.1-1.3Z',
 };
 
 const NAV = [
-  { to: '/business', label: 'আমার ব্যবসা', icon: 'home', roles: ['client'] },
+  { to: '/business', label: 'আমার ব্যবসা', icon: 'home', end: true, roles: ['client'] },
+  { to: '/business/ads', label: 'অ্যাড পারফরম্যান্স', icon: 'megaphone', roles: ['client'] },
+  { to: '/business/accounting', label: 'হিসাব ও ইনভয়েস', icon: 'wallet', roles: ['client'] },
+  { to: '/business/messages', label: 'মেসেজ', icon: 'chat', roles: ['client'] },
   { to: '/', label: 'ওভারভিউ', icon: 'chart', end: true, roles: STAFF_ROLES },
   { to: '/clients', label: 'ক্লায়েন্ট', icon: 'users', roles: STAFF_ROLES },
+  { to: '/ad-accounts', label: 'অ্যাড অ্যাকাউন্ট', icon: 'megaphone', roles: STAFF_ROLES },
   { to: '/cycles', label: 'মাস / সাইকেল', icon: 'calendar', roles: STAFF_ROLES },
-  { to: '/users', label: 'টিম', icon: 'settings', roles: ['admin', 'manager'] },
+  { to: '/tasks', label: 'টাস্ক', icon: 'check', roles: STAFF_ROLES },
+  { to: '/finance', label: 'ফাইন্যান্স', icon: 'wallet', roles: ['admin', 'manager'] },
+  { to: '/team', label: 'টিম পারফরম্যান্স', icon: 'users', roles: ['admin', 'manager'] },
+  { to: '/users', label: 'ইউজার ও রোল', icon: 'settings', roles: ['admin', 'manager'] },
 ];
 
 const Brand = () => (
@@ -109,6 +121,7 @@ export const AppLayout = () => {
             <Brand />
           </div>
           <div className="ml-auto flex items-center gap-3">
+            <NotificationBell />
             <LanguageSwitch className="hidden sm:inline-flex" />
             <div className="hidden h-6 w-px bg-slate-200 sm:block" />
             <div className="flex items-center gap-2.5">

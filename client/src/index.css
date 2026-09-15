@@ -22,8 +22,9 @@
 }
 
 @layer components {
+  /* min-w-0: as a grid/flex item a card must shrink, so wide tables scroll inside it instead of widening the page. */
   .card {
-    @apply rounded-xl border border-slate-200/80 bg-white shadow-card;
+    @apply min-w-0 rounded-xl border border-slate-200/80 bg-white shadow-card;
   }
   .card-header {
     @apply flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4;

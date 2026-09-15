@@ -11,6 +11,10 @@ import taskRoutes from './modules/tasks/task.routes.js';
 import contentRoutes from './modules/content/content.routes.js';
 import dashboardRoutes from './modules/dashboard/dashboard.routes.js';
 import activityRoutes from './modules/activity/activity.routes.js';
+import adAccountRoutes from './modules/ads/ads.routes.js';
+import financeRoutes from './modules/finance/finance.routes.js';
+import notificationRoutes from './modules/notifications/notification.routes.js';
+import agencyTaskRoutes, { teamRouter } from './modules/agencyTasks/agencyTask.routes.js';
 import {
   PLATFORMS,
   CONTENT_TYPES,
@@ -20,6 +24,9 @@ import {
   ALL_ROLES,
   ORDER_STATUS,
   EXPENSE_CATEGORIES,
+  AD_PLATFORMS,
+  AGENCY_EXPENSE_CATEGORIES,
+  TASK_PRIORITIES,
 } from './config/constants.js';
 
 const router = Router();
@@ -41,11 +48,15 @@ router.get('/meta', (req, res) =>
       roles: ALL_ROLES,
       orderStatus: ORDER_STATUS,
       expenseCategories: EXPENSE_CATEGORIES,
+      adPlatforms: AD_PLATFORMS,
+      agencyExpenseCategories: AGENCY_EXPENSE_CATEGORIES,
+      taskPriorities: TASK_PRIORITIES,
     },
   }),
 );
 
-// Client logins are scoped to their own business data; everything after this is staff-only.
+// Open to every login but always scoped: notifications by user, /business/* by client.
+router.use('/notifications', notificationRoutes);
 router.use('/business', businessRoutes);
 router.use(staffOnly);
 
@@ -58,5 +69,9 @@ router.use('/tasks', taskRoutes);
 router.use('/content', contentRoutes);
 router.use('/dashboard', dashboardRoutes);
 router.use('/activity', activityRoutes);
+router.use('/ad-accounts', adAccountRoutes);
+router.use('/finance', financeRoutes);
+router.use('/agency-tasks', agencyTaskRoutes);
+router.use('/team', teamRouter);
 
 export default router;

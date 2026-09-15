@@ -36,6 +36,7 @@ const OrderForm = ({ initial, products, saving, onClose, onSubmit }) => {
     customer_name: initial?.customer_name || '',
     customer_phone: initial?.customer_phone || '',
     note: initial?.note || '',
+    source: initial?.source || '',
   });
   const set = (key) => (e) => setForm({ ...form, [key]: e.target.value });
 
@@ -52,6 +53,7 @@ const OrderForm = ({ initial, products, saving, onClose, onSubmit }) => {
       customer_name: form.customer_name || null,
       customer_phone: form.customer_phone || null,
       note: form.note || null,
+      source: form.source || null,
     });
 
   return (
@@ -113,6 +115,9 @@ const OrderForm = ({ initial, products, saving, onClose, onSubmit }) => {
         </Field>
         <Field label="নোট">
           <Input value={form.note} onChange={set('note')} />
+        </Field>
+        <Field label="সোর্স (কোন অ্যাড/ক্যাম্পেইন)" className="sm:col-span-3" hint="জানা থাকলে — যেমন Eid Collection, Retargeting, অর্গানিক">
+          <Input value={form.source} onChange={set('source')} />
         </Field>
 
         <div className="sm:col-span-3 grid grid-cols-3 gap-3 rounded-lg bg-slate-50 p-3 text-sm">
@@ -210,7 +215,16 @@ export const OrdersTab = () => {
         </div>
       ),
     },
-    { key: 'product_name', header: 'প্রোডাক্ট' },
+    {
+      key: 'product_name',
+      header: 'প্রোডাক্ট',
+      render: (r) => (
+        <div>
+          <p>{r.product_name}</p>
+          {r.source && <p className="text-xs text-slate-500">{r.source}</p>}
+        </div>
+      ),
+    },
     { key: 'qty', header: 'পিস', align: 'right', render: (r) => number(r.qty) },
     { key: 'amount', header: 'মোট', align: 'right', render: (r) => currency(r.amount) },
     { key: 'paid_amount', header: 'পেমেন্ট', align: 'right', render: (r) => currency(r.paid_amount) },

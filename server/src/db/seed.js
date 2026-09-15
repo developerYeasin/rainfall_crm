@@ -192,6 +192,95 @@ const seed = async () => {
     console.log('[seed] demo client business ledger');
   }
 
+  // The media buyer works on the demo client (tenant scoping: staff only see assigned clients).
+  await query('INSERT IGNORE INTO client_staff (client_id, user_id) VALUES (?, ?), (?, ?)', [client.id, managerId, client.id, buyerId]);
+
+  // A second client nobody but the admin is assigned to — useful for checking data isolation.
+  let other = await queryOne('SELECT id FROM clients WHERE name = ?', ['Glow Cosmetics']);
+  if (!other) {
+    const res = await query(
+      `INSERT INTO clients (name, company, contact_person, industry, status, onboarded_at, monthly_retainer, created_by)
+       VALUES ('Glow Cosmetics', 'Glow Cosmetics Ltd', 'Sadia Rahman', 'Beauty', 'active', '2026-08-15', 30000, ?)`,
+      [adminId],
+    );
+    other = { id: res.insertId };
+    await upsertUser({ name: 'Sadia Rahman', email: 'glow@client.com', password: 'Client@123', role: 'client', clientId: other.id });
+    console.log('[seed] second client (isolation check)');
+  }
+
+  // Sample synced Meta data so the Ads dashboard has something to show before a real token is connected.
+  const hasAccount = await queryOne('SELECT id FROM ad_accounts WHERE client_id = ? LIMIT 1', [client.id]);
+  if (!hasAccount) {
+    const res = await query(
+      `INSERT INTO ad_accounts (client_id, platform, external_id, name, currency, daily_budget, assigned_user_id, is_active, last_synced_at, created_by)
+       VALUES (?, 'meta', 'DEMO0001', 'Demo Fashion BD — sample data', 'BDT', 2000, ?, 0, NOW(), ?)`,
+      [client.id, buyerId, adminId],
+    );
+    const accountId = res.insertId;
+    const campaigns = [
+      { id: 'demo_c1', name: 'Eid Collection — Sales', adsets: [['demo_s1', 'Dhaka 18-34 Women'], ['demo_s2', 'Lookalike Buyers 1%']], share: 0.65 },
+      { id: 'demo_c2', name: 'Retargeting — Catalog', adsets: [['demo_s3', 'Viewed 30d'], ['demo_s4', 'Add to cart 14d']], share: 0.35 },
+    ];
+    const rows = [];
+    for (let d = 29; d >= 0; d -= 1) {
+      const date = new Date(Date.now() - d * 86400000).toISOString().slice(0, 10);
+      // Deterministic wobble so re-seeding gives the same chart.
+      const wobble = 0.8 + ((d * 37) % 40) / 100;
+      const day = { spend: 0, impressions: 0, clicks: 0, results: 0, value: 0 };
+      for (const c of campaigns) {
+        const camp = { spend: 0, impressions: 0, clicks: 0, results: 0, value: 0 };
+        c.adsets.forEach(([sid, sname], i) => {
+          const spend = Math.round(1900 * c.share * wobble * (i ? 0.45 : 0.55));
+          const impressions = Math.round(spend * 22);
+          const clicks = Math.round(impressions * 0.019);
+          const results = Math.round(clicks * (c.id === 'demo_c2' ? 0.05 : 0.03));
+          const value = results * 1350;
+          rows.push([accountId, client.id, 'adset', sid, sname, c.id, date, spend, impressions, clicks, results, value]);
+          for (const [k, v] of Object.entries({ spend, impressions, clicks, results, value })) camp[k] += v;
+        });
+        rows.push([accountId, client.id, 'campaign', c.id, c.name, null, date, camp.spend, camp.impressions, camp.clicks, camp.results, camp.value]);
+        for (const k of Object.keys(day)) day[k] += camp[k];
+      }
+      rows.push([accountId, client.id, 'account', 'DEMO0001', null, null, date, day.spend, day.impressions, day.clicks, day.results, day.value]);
+    }
+    for (const r of rows) {
+      await query(
+        `INSERT INTO ad_insights (ad_account_id, client_id, level, object_id, object_name, parent_id, stat_date, spend, impressions, clicks, results, purchase_value)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        r,
+      );
+    }
+    console.log('[seed] demo ad account + 30 days of insights');
+  }
+
+  const hasInvoice = await queryOne('SELECT id FROM invoices WHERE client_id = ? LIMIT 1', [client.id]);
+  if (!hasInvoice) {
+    const res = await query(
+      `INSERT INTO invoices (client_id, invoice_no, period_month, issue_date, due_date, agency_fee, other_charges, note, created_by)
+       VALUES (?, 'RF-202609-DEMO', '2026-09-01', '2026-09-01', '2026-09-10', 25000, 0, 'Monthly retainer', ?)`,
+      [client.id, adminId],
+    );
+    await query(
+      "INSERT INTO invoice_payments (invoice_id, client_id, amount, paid_on, method, created_by) VALUES (?, ?, 15000, '2026-09-05', 'bKash', ?)",
+      [res.insertId, client.id, adminId],
+    );
+    await query(
+      "INSERT INTO agency_expenses (expense_date, category, amount, note, created_by) VALUES ('2026-09-01', 'software', 4500, 'Design tools', ?), ('2026-09-01', 'salary', 60000, 'Team salaries', ?)",
+      [adminId, adminId],
+    );
+    await query(
+      `INSERT INTO agency_tasks (title, client_id, assignee_id, due_date, priority, created_by)
+       VALUES ('Refresh Eid creatives', ?, ?, CURDATE() + INTERVAL 2 DAY, 'high', ?)`,
+      [client.id, buyerId, managerId],
+    );
+    await query("INSERT INTO client_messages (client_id, user_id, kind, body) VALUES (?, ?, 'announcement', ?)", [
+      client.id,
+      managerId,
+      'Retargeting budget increased from this week — expect more catalog sales.',
+    ]);
+    console.log('[seed] demo invoice, agency expenses, task, announcement');
+  }
+
   console.log('[seed] done');
 };
 

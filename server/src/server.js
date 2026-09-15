@@ -2,6 +2,7 @@ import { createApp } from './app.js';
 import { config } from './config/index.js';
 import { pool, healthCheck } from './db/pool.js';
 import { runMigrations } from './db/migrate.js';
+import { startScheduler } from './jobs/scheduler.js';
 
 const start = async () => {
   try {
@@ -15,6 +16,7 @@ const start = async () => {
 
   const server = createApp().listen(config.port, () => {
     console.log(`[api] listening on http://localhost:${config.port} (${config.env})`);
+    startScheduler();
   });
 
   const shutdown = async (signal) => {

@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/Badge.jsx';
 import { Button } from '@/components/ui/Button.jsx';
 import { Loading, ErrorState } from '@/components/ui/States.jsx';
 import { CycleForm } from '@/features/cycles/CycleForm.jsx';
+import { ClientStaffCard } from './ClientStaffCard.jsx';
 import { CLIENT_STATUS_LABEL, CLIENT_STATUS_TONE, CYCLE_STATUS_LABEL } from '@/lib/status.js';
 import { currency, dateLabel } from '@/lib/format.js';
 import { useAuth } from '@/features/auth/AuthContext.jsx';
@@ -114,6 +115,10 @@ export const ClientDetailPage = () => {
             <p className="whitespace-pre-wrap text-sm text-slate-600">{data.notes || t('কোনো নোট নেই')}</p>
           </CardBody>
         </Card>
+      </div>
+
+      <div className="mt-4">
+        <ClientStaffCard clientId={Number(id)} />
       </div>
 
       <Card className="mt-4">

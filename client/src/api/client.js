@@ -37,7 +37,9 @@ api.interceptors.response.use(
     const status = error.response?.status;
 
     // One silent refresh attempt per failed request, shared across concurrent 401s.
-    if (status === 401 && !original._retried && tokenStore.refresh && !original.url?.includes('/auth/')) {
+    // /auth/me must refresh too, or reopening the app after the access token expires logs the user out.
+    const skipRefresh = /\/auth\/(login|refresh|logout)/.test(original.url || '');
+    if (status === 401 && !original._retried && tokenStore.refresh && !skipRefresh) {
       original._retried = true;
       try {
         refreshing =

@@ -16,9 +16,18 @@ export const createApp = () => {
   app.use(helmet());
   app.use(
     cors({
+      // Development accepts any localhost port (Vite moves to 5174/5175… when 5173 is busy).
+      // A disallowed origin just gets no CORS headers — the browser blocks it — instead of a 500.
       origin: (origin, cb) =>
-        !origin || config.clientOrigins.includes(origin) ? cb(null, true) : cb(new Error('CORS blocked')),
+        cb(
+          null,
+          !origin ||
+            config.clientOrigins.includes(origin) ||
+            (config.env !== 'production' && /^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin)),
+        ),
       credentials: true,
+      // Lets the web app read export filenames when the API is on another origin.
+      exposedHeaders: ['Content-Disposition'],
     }),
   );
   app.use(express.json({ limit: '1mb' }));

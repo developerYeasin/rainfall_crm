@@ -100,3 +100,56 @@ export const usersApi = {
 export const activityApi = {
   list: (params) => api.get('/activity', { params }).then(unwrapList),
 };
+
+/** Client-dashboard modules next to the ledger — same client scoping as businessApi. */
+export const portalApi = {
+  ads: (clientId, params) => api.get('/business/ads', scoped(clientId, params)).then(unwrap),
+  accounting: (clientId, year) => api.get('/business/accounting', scoped(clientId, { year })).then(unwrap),
+  invoices: (clientId) => api.get('/business/invoices', scoped(clientId)).then(unwrapList),
+  messages: (clientId) => api.get('/business/messages', scoped(clientId)).then(unwrap),
+  sendMessage: (clientId, payload) => api.post('/business/messages', payload, scoped(clientId)).then(unwrap),
+  exportPath: (clientId, file, params) => ({ url: `/business/export/${file}`, params: { ...params, client_id: clientId } }),
+};
+
+export const adAccountsApi = {
+  list: (params) => api.get('/ad-accounts', { params }).then(unwrap),
+  create: (payload) => api.post('/ad-accounts', payload).then(unwrap),
+  update: ({ id, ...payload }) => api.patch(`/ad-accounts/${id}`, payload).then(unwrap),
+  remove: (id) => api.delete(`/ad-accounts/${id}`),
+  sync: (id) => api.post(`/ad-accounts/${id}/sync`).then(unwrap),
+};
+
+export const financeApi = {
+  invoices: (params) => api.get('/finance/invoices', { params }).then(unwrapList),
+  invoice: (id) => api.get(`/finance/invoices/${id}`).then(unwrap),
+  createInvoice: (payload) => api.post('/finance/invoices', payload).then(unwrap),
+  updateInvoice: ({ id, ...payload }) => api.patch(`/finance/invoices/${id}`, payload).then(unwrap),
+  addPayment: ({ id, ...payload }) => api.post(`/finance/invoices/${id}/payments`, payload).then(unwrap),
+  removePayment: (id) => api.delete(`/finance/payments/${id}`),
+  expenses: (params) => api.get('/finance/expenses', { params }).then(unwrap),
+  createExpense: (payload) => api.post('/finance/expenses', payload).then(unwrap),
+  removeExpense: (id) => api.delete(`/finance/expenses/${id}`),
+  pnl: (year) => api.get('/finance/pnl', { params: { year } }).then(unwrap),
+};
+
+export const clientStaffApi = {
+  list: (clientId) => api.get(`/clients/${clientId}/staff`).then(unwrap),
+  set: (clientId, userIds) => api.put(`/clients/${clientId}/staff`, { user_ids: userIds }).then(unwrap),
+};
+
+export const notificationsApi = {
+  list: () => api.get('/notifications').then(unwrapList),
+  read: (id) => api.post(`/notifications/${id}/read`),
+  readAll: () => api.post('/notifications/read-all'),
+};
+
+export const agencyTasksApi = {
+  list: (params) => api.get('/agency-tasks', { params }).then(unwrap),
+  create: (payload) => api.post('/agency-tasks', payload).then(unwrap),
+  update: ({ id, ...payload }) => api.patch(`/agency-tasks/${id}`, payload).then(unwrap),
+  remove: (id) => api.delete(`/agency-tasks/${id}`),
+};
+
+export const teamApi = {
+  list: () => api.get('/team').then(unwrap),
+};

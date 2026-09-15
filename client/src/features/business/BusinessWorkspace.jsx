@@ -13,9 +13,12 @@ import { t } from '@/i18n/index.jsx';
 
 const TABS = [
   { to: '', label: 'সামারি', end: true },
-  { to: 'stock', label: 'প্রোডাক্ট ও স্টক' },
+  { to: 'ads', label: 'অ্যাড পারফরম্যান্স' },
   { to: 'orders', label: 'সেল ও প্রি-অর্ডার' },
+  { to: 'stock', label: 'প্রোডাক্ট ও স্টক' },
   { to: 'expenses', label: 'খরচ ও মার্কেটিং' },
+  { to: 'accounting', label: 'মাসিক হিসাব' },
+  { to: 'messages', label: 'মেসেজ' },
 ];
 
 /**

@@ -323,7 +323,8 @@ export const businessService = {
       ...dateClauses('o.order_date', range),
     ]);
 
-    const [client, orderRows, expenseRows, adTotals, purchaseTotals, products, monthlyOrders, monthlyExpenses, monthlyAds, topProducts] =
+    const syncedRange = buildWhere([['client_id = ?', clientId], ...dateClauses('stat_date', range)]);
+    const [client, orderRows, expenseRows, manualAdTotals, purchaseTotals, products, monthlyOrders, monthlyExpenses, manualMonthlyAds, topProducts, syncedAdTotals, syncedMonthlyAds] =
       await Promise.all([
         this.resolveClient(clientId),
         query(
@@ -372,7 +373,22 @@ export const businessService = {
            GROUP BY p.id, p.name ORDER BY qty DESC LIMIT 5`,
           soldRange.params,
         ),
+        queryOne(
+          `SELECT COALESCE(SUM(spend), 0) AS spend, COALESCE(SUM(purchase_value), 0) AS revenue,
+                  COALESCE(SUM(results), 0) AS conversions
+           FROM ad_insights ${syncedRange.sql} AND level = 'account'`,
+          syncedRange.params,
+        ),
+        query(
+          `SELECT DATE_FORMAT(stat_date, '%Y-%m') AS month, SUM(spend) AS spend
+           FROM ad_insights ${syncedRange.sql} AND level = 'account' GROUP BY month`,
+          syncedRange.params,
+        ),
       ]);
+
+    // Synced ad-account data wins over manual tracker rows when it exists, so spend is never counted twice.
+    const adTotals = num(syncedAdTotals.spend) > 0 ? syncedAdTotals : manualAdTotals;
+    const monthlyAds = syncedMonthlyAds.length ? syncedMonthlyAds : manualMonthlyAds;
 
     const byStatus = Object.fromEntries(orderRows.map((r) => [r.status, r]));
     const bucket = (...statuses) =>
