@@ -15,12 +15,18 @@ import { currency, number, dateLabel, today } from '@/lib/format.js';
 import { ORDER_STATUS_LABEL, ORDER_STATUS_TONE } from '@/lib/status.js';
 import { t } from '@/i18n/index.jsx';
 
-const STATUS_OPTIONS = Object.keys(ORDER_STATUS_LABEL).map((value) => ({
+// Pre-orders are retired: only real orders are taken. Old pre-order rows still show their label.
+const STATUS_OPTIONS = Object.keys(ORDER_STATUS_LABEL)
+  .filter((value) => value !== 'pre_order')
+  .map((value) => ({
   value,
   get label() {
     return ORDER_STATUS_LABEL[value];
   },
 }));
+/** A legacy pre-order keeps its own value in the picker so it can be moved to confirmed. */
+const optionsFor = (current) =>
+  current === 'pre_order' ? [{ value: 'pre_order', label: ORDER_STATUS_LABEL.pre_order }, ...STATUS_OPTIONS] : STATUS_OPTIONS;
 const PAGE_SIZE = 50;
 
 const OrderForm = ({ initial, products, saving, onClose, onSubmit }) => {
@@ -60,8 +66,8 @@ const OrderForm = ({ initial, products, saving, onClose, onSubmit }) => {
     <Modal
       open
       onClose={onClose}
-      title={initial?.id ? 'অর্ডার সম্পাদনা' : 'নতুন সেল / প্রি-অর্ডার'}
-      subtitle="স্টকে না থাকলে প্রি-অর্ডার হিসেবে নিন — মাল এলে কনফার্মড/ডেলিভারড করুন"
+      title={initial?.id ? 'অর্ডার সম্পাদনা' : 'নতুন অর্ডার'}
+      subtitle="কনফার্মড অর্ডার ডেলিভারি হলে ডেলিভারড করুন"
       footer={
         <>
           <Button variant="secondary" onClick={onClose}>
@@ -85,7 +91,7 @@ const OrderForm = ({ initial, products, saving, onClose, onSubmit }) => {
           />
         </Field>
         <Field label="স্ট্যাটাস">
-          <Select value={form.status} onChange={set('status')} options={STATUS_OPTIONS} />
+          <Select value={form.status} onChange={set('status')} options={optionsFor(form.status)} />
         </Field>
         <Field label="তারিখ *">
           <Input type="date" value={form.order_date} onChange={set('order_date')} />
@@ -251,7 +257,7 @@ export const OrdersTab = () => {
           <Select
             className="w-32 py-1 text-xs"
             value={r.status}
-            options={STATUS_OPTIONS}
+            options={optionsFor(r.status)}
             disabled={changeStatus.isPending}
             onChange={(e) => changeStatus.mutate({ id: r.id, status: e.target.value })}
           />
@@ -312,7 +318,7 @@ export const OrdersTab = () => {
 
       <Card>
         <CardHeader
-          title="সেল ও প্রি-অর্ডার"
+          title="অর্ডারসমূহ"
           subtitle={t('{n} টি অর্ডার', { n: number(meta.total) })}
           actions={
             <>

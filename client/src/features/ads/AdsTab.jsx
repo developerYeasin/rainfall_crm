@@ -1,11 +1,13 @@
 import { Fragment, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
 import { Bar, CartesianGrid, ComposedChart, Legend, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { portalApi } from '@/api/endpoints.js';
 import { Card, CardHeader } from '@/components/ui/Card.jsx';
 import { StatTile } from '@/components/ui/StatTile.jsx';
 import { Badge } from '@/components/ui/Badge.jsx';
+import { Button } from '@/components/ui/Button.jsx';
 import { Select } from '@/components/ui/Field.jsx';
 import { Loading, ErrorState, EmptyState } from '@/components/ui/States.jsx';
 import { currency, number, percent, roas, dateLabel } from '@/lib/format.js';
@@ -68,18 +70,99 @@ const CampaignTable = ({ campaigns }) => {
               </tr>
               {open[c.id] &&
                 c.adsets.map((s) => (
-                  <tr key={s.id} className="bg-slate-50/60">
-                    <td className="pl-10 text-slate-600">
-                      <span className="block max-w-[260px] truncate">{s.name || s.id}</span>
-                    </td>
-                    <Metrics row={s} />
-                  </tr>
+                  <Fragment key={s.id}>
+                    <tr className="bg-slate-50/60">
+                      <td className="pl-8 text-slate-600">
+                        <button
+                          type="button"
+                          className="flex items-center gap-2"
+                          onClick={() => setOpen({ ...open, [s.id]: !open[s.id] })}
+                          disabled={!s.ads?.length}
+                        >
+                          <span className="inline-block w-3 text-slate-400">{s.ads?.length ? (open[s.id] ? '▾' : '▸') : ''}</span>
+                          <span className="block max-w-[260px] truncate">{s.name || s.id}</span>
+                        </button>
+                      </td>
+                      <Metrics row={s} />
+                    </tr>
+                    {open[s.id] &&
+                      s.ads.map((a) => (
+                        <tr key={a.id} className="bg-slate-50">
+                          <td className="pl-16 text-xs text-slate-500">
+                            <span className="block max-w-[240px] truncate">{a.name || a.id}</span>
+                          </td>
+                          <Metrics row={a} />
+                        </tr>
+                      ))}
+                  </Fragment>
                 ))}
             </Fragment>
           ))}
         </tbody>
       </table>
     </div>
+  );
+};
+
+/** Every individual ad, ranked by what it cost — the "which ad works" view. */
+const AdsTable = ({ ads, totalSpend }) => {
+  const [showAll, setShowAll] = useState(false);
+  if (!ads.length) {
+    return <EmptyState title="এই সময়ে কোনো অ্যাড ডেটা নেই" description="পরের সিঙ্কে প্রতিটি অ্যাডের খরচ ও রেজাল্ট এখানে আসবে" />;
+  }
+  const bestCpr = Math.min(...ads.filter((a) => a.results > 0).map((a) => a.cost_per_result));
+  const rows = showAll ? ads : ads.slice(0, 15);
+  return (
+    <>
+      <div className="table-wrap">
+        <table className="table" style={{ minWidth: 980 }}>
+          <thead>
+            <tr>
+              <th>{t('অ্যাড')}</th>
+              <th className="text-right">{t('খরচের ভাগ')}</th>
+              {HEADERS.map((h) => (
+                <th key={h} className="text-right">
+                  {t(h)}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((a) => {
+              const share = totalSpend > 0 ? a.spend / totalSpend : 0;
+              return (
+                <tr key={a.id}>
+                  <td>
+                    <p className="flex max-w-[300px] items-center gap-2 font-medium text-slate-800">
+                      <span className="truncate">{a.name || a.id}</span>
+                      {a.results > 0 && a.cost_per_result === bestCpr && <Badge tone="success">{t('সেরা')}</Badge>}
+                      {a.spend > 0 && a.results === 0 && <Badge tone="danger">{t('রেজাল্ট নেই')}</Badge>}
+                    </p>
+                    <p className="max-w-[300px] truncate text-xs text-slate-500">{[a.campaign, a.adset].filter(Boolean).join(' › ')}</p>
+                  </td>
+                  <td className="text-right">
+                    <div className="ml-auto flex w-24 items-center gap-2">
+                      <div className="h-1.5 flex-1 rounded-full bg-slate-100">
+                        <div className="h-1.5 rounded-full bg-brand-500" style={{ width: `${Math.min(share * 100, 100)}%` }} />
+                      </div>
+                      <span className="w-9 text-xs text-slate-500">{percent(share, 0)}</span>
+                    </div>
+                  </td>
+                  <Metrics row={a} />
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      {ads.length > 15 && (
+        <div className="border-t border-slate-100 p-3 text-center">
+          <Button size="sm" variant="ghost" onClick={() => setShowAll(!showAll)}>
+            {showAll ? t('কম দেখান') : t('সব {n}টি অ্যাড দেখুন', { n: ads.length })}
+          </Button>
+        </div>
+      )}
+    </>
   );
 };
 
@@ -95,14 +178,26 @@ export const AdsTab = () => {
   const { data, isLoading, error, refetch, dataUpdatedAt } = useQuery({
     queryKey: ['business', clientId, 'ads', params],
     queryFn: () => portalApi.ads(clientId, params),
-    refetchInterval: 5 * 60_000,
+    refetchInterval: 60_000,
     placeholderData: (prev) => prev,
+  });
+
+  // Pulls fresh numbers straight from Facebook / the ad platforms.
+  const qc = useQueryClient();
+  const syncNow = useMutation({
+    mutationFn: () => portalApi.syncAds(clientId),
+    onSuccess: (result) => {
+      qc.invalidateQueries({ queryKey: ['business', clientId, 'ads'] });
+      if (result.failed) toast.error(t('কিছু অ্যাকাউন্ট সিঙ্ক হয়নি: {e}', { e: result.errors[0] }));
+      else toast.success(result.ok ? t('লেটেস্ট ডেটা আনা হয়েছে') : t('ডেটা এরই মধ্যে আপ-টু-ডেট'));
+    },
+    onError: (err) => toast.error(err.message),
   });
 
   if (isLoading) return <Loading />;
   if (error) return <ErrorState error={error} onRetry={refetch} />;
 
-  const { totals, sales, series, campaigns, accounts } = data;
+  const { totals, sales, series, campaigns, accounts, ads = [] } = data;
   const lastSync = accounts.map((a) => a.last_synced_at).filter(Boolean).sort().pop();
 
   if (!accounts.length) {
@@ -122,9 +217,14 @@ export const AdsTab = () => {
         <p className="text-sm text-slate-500">
           {t('{from} থেকে {to}', { from: data.range.from, to: data.range.to })}
           {lastSync && <> · {t('শেষ সিঙ্ক {time}', { time: String(lastSync).slice(0, 16).replace('T', ' ') })}</>}
-          {dataUpdatedAt ? <span className="hidden sm:inline"> · {t('প্রতি ৫ মিনিটে রিফ্রেশ হয়')}</span> : null}
+          {dataUpdatedAt ? <span className="hidden sm:inline"> · {t('নিজে থেকেই আপডেট হয়')}</span> : null}
         </p>
-        <Select className="w-36" value={group} onChange={(e) => setGroup(e.target.value)} options={GROUP_OPTIONS} />
+        <div className="flex items-center gap-2">
+          <Button variant="secondary" loading={syncNow.isPending} onClick={() => syncNow.mutate()}>
+            ↻ {t('এখনই রিফ্রেশ')}
+          </Button>
+          <Select className="w-36" value={group} onChange={(e) => setGroup(e.target.value)} options={GROUP_OPTIONS} />
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
@@ -176,7 +276,12 @@ export const AdsTab = () => {
       </Card>
 
       <Card>
-        <CardHeader title="ক্যাম্পেইন ও অ্যাড সেট" subtitle="ক্যাম্পেইনে ক্লিক করলে অ্যাড সেট দেখা যাবে" />
+        <CardHeader title="কোন অ্যাড কেমন করছে" subtitle="প্রতিটি অ্যাডের খরচ, রেজাল্ট ও প্রতি রেজাল্ট খরচ — বেশি খরচ আগে" />
+        <AdsTable ads={ads} totalSpend={totals.spend} />
+      </Card>
+
+      <Card>
+        <CardHeader title="ক্যাম্পেইন ও অ্যাড সেট" subtitle="ক্যাম্পেইনে ক্লিক করলে অ্যাড সেট, অ্যাড সেটে ক্লিক করলে অ্যাড দেখা যাবে" />
         <CampaignTable campaigns={campaigns} />
       </Card>
 

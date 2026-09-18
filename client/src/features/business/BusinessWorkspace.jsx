@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { businessApi } from '@/api/endpoints.js';
 import { PageHeader } from '@/components/layout/PageHeader.jsx';
-import { Input, Select } from '@/components/ui/Field.jsx';
+import { DateRangePicker } from '@/components/ui/DateRangePicker.jsx';
 import { Loading, ErrorState } from '@/components/ui/States.jsx';
 import { useAuth } from '@/features/auth/AuthContext.jsx';
 import { BUSINESS_WRITE_ROLES } from '@/lib/status.js';
@@ -14,7 +14,7 @@ import { t } from '@/i18n/index.jsx';
 const TABS = [
   { to: '', label: 'সামারি', end: true },
   { to: 'ads', label: 'অ্যাড পারফরম্যান্স' },
-  { to: 'orders', label: 'সেল ও প্রি-অর্ডার' },
+  { to: 'orders', label: 'অর্ডারসমূহ' },
   { to: 'stock', label: 'প্রোডাক্ট ও স্টক' },
   { to: 'expenses', label: 'খরচ ও মার্কেটিং' },
   { to: 'accounting', label: 'মাসিক হিসাব' },
@@ -30,9 +30,9 @@ export const BusinessWorkspace = () => {
   const { user, can } = useAuth();
   const isClient = user.role === 'client';
   const clientId = Number(id ?? user.client_id);
-  const [rangeKey, setRangeKey] = useState('all');
-  const [custom, setCustom] = useState({ from: '', to: '' });
-  const range = useMemo(() => rangeFor(rangeKey, new Date(), custom), [rangeKey, custom]);
+  // Every tab (summary, ads, orders…) follows the period picked on the calendar.
+  const [period, setPeriod] = useState({ key: 'all', from: '', to: '' });
+  const range = useMemo(() => rangeFor(period.key, new Date(), period), [period]);
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['business', clientId, 'profile'],
@@ -53,40 +53,15 @@ export const BusinessWorkspace = () => {
           )
         }
         title={isClient ? t('{name} — আমার ব্যবসা', { name: data.name }) : 'ব্যবসার হিসাব'}
-        subtitle={data.company || 'সেল, স্টক, প্রি-অর্ডার, মার্কেটিং খরচ ও প্রফিট — সব এক জায়গায়'}
+        subtitle={data.company || 'সেল, অর্ডার, স্টক, মার্কেটিং খরচ ও প্রফিট — সব এক জায়গায়'}
         actions={
-          <div className="flex w-full flex-wrap items-end gap-2 sm:w-auto">
-            <Select
-              className="w-full sm:w-56"
-              value={rangeKey}
-              onChange={(e) => setRangeKey(e.target.value)}
-              options={RANGE_OPTIONS}
-            />
-            {rangeKey === 'custom' && (
-              <>
-                <label className="flex-1 sm:flex-none">
-                  <span className="mb-0.5 block text-xs text-slate-500">{t('শুরু')}</span>
-                  <Input
-                    type="date"
-                    className="w-full sm:w-40"
-                    value={custom.from}
-                    max={custom.to || undefined}
-                    onChange={(e) => setCustom({ ...custom, from: e.target.value })}
-                  />
-                </label>
-                <label className="flex-1 sm:flex-none">
-                  <span className="mb-0.5 block text-xs text-slate-500">{t('শেষ')}</span>
-                  <Input
-                    type="date"
-                    className="w-full sm:w-40"
-                    value={custom.to}
-                    min={custom.from || undefined}
-                    onChange={(e) => setCustom({ ...custom, to: e.target.value })}
-                  />
-                </label>
-              </>
-            )}
-          </div>
+          <DateRangePicker
+            className="w-full sm:w-auto"
+            value={period}
+            presets={RANGE_OPTIONS}
+            resolve={(key) => rangeFor(key)}
+            onChange={setPeriod}
+          />
         }
       />
 

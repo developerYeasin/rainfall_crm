@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { adAccountsApi, clientsApi, teamApi } from '@/api/endpoints.js';
@@ -14,6 +14,7 @@ import { Loading, ErrorState } from '@/components/ui/States.jsx';
 import { useAuth } from '@/features/auth/AuthContext.jsx';
 import { currency } from '@/lib/format.js';
 import { t } from '@/i18n/index.jsx';
+import { FacebookConnectModal } from './FacebookConnectModal.jsx';
 
 const PLATFORM_OPTIONS = [
   { value: 'meta', label: 'Meta (Facebook / Instagram)' },
@@ -151,6 +152,15 @@ export const AdAccountsPage = () => {
   const canManage = can('admin', 'manager');
   const [editing, setEditing] = useState(null);
   const [flagOnly, setFlagOnly] = useState(false);
+  const [params, setParams] = useSearchParams();
+  // Facebook sends the browser back here with ?meta_session= (or ?meta_error=).
+  const [connecting, setConnecting] = useState(() =>
+    params.get('meta_session') ? { session: params.get('meta_session'), clientId: params.get('client_id') } : null,
+  );
+  useEffect(() => {
+    if (params.get('meta_error')) toast.error(params.get('meta_error'));
+    if (params.has('meta_session') || params.has('meta_error')) setParams({}, { replace: true });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const { data, isLoading, error, refetch } = useQuery({ queryKey: ['ad-accounts'], queryFn: () => adAccountsApi.list() });
   const invalidate = () => qc.invalidateQueries({ queryKey: ['ad-accounts'] });
@@ -306,7 +316,18 @@ export const AdAccountsPage = () => {
       <PageHeader
         title="অ্যাড অ্যাকাউন্ট"
         subtitle="সব ক্লায়েন্টের যুক্ত অ্যাড অ্যাকাউন্ট, সিঙ্ক ও বাজেট অ্যালার্ট"
-        actions={canManage && <Button onClick={() => setEditing({})}>+ অ্যাকাউন্ট যুক্ত করুন</Button>}
+        actions={
+          canManage && (
+            <>
+              <Button className="bg-[#1877F2] hover:bg-[#166fe0]" onClick={() => setConnecting({})}>
+                {t('Facebook কানেক্ট')}
+              </Button>
+              <Button variant="secondary" onClick={() => setEditing({})}>
+                + ম্যানুয়ালি যুক্ত করুন
+              </Button>
+            </>
+          )
+        }
       />
 
       <div className="mb-4 flex flex-wrap items-center gap-3">
@@ -324,6 +345,19 @@ export const AdAccountsPage = () => {
         <Table columns={columns} rows={rows} empty="কোনো অ্যাড অ্যাকাউন্ট নেই" minWidth={900} />
       </Card>
 
+      {connecting && (
+        <FacebookConnectModal
+          session={connecting.session}
+          initialClientId={connecting.clientId}
+          onClose={() => setConnecting(null)}
+          onDone={() => {
+            setConnecting(null);
+            invalidate();
+            // The first sync runs on the server; refresh the list once it has had time to land.
+            setTimeout(invalidate, 15_000);
+          }}
+        />
+      )}
       {editing && <AccountForm initial={editing} saving={save.isPending} onClose={() => setEditing(null)} onSubmit={(p) => save.mutate(p)} />}
     </>
   );

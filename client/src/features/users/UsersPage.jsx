@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { usersApi, authApi, clientsApi } from '@/api/endpoints.js';
@@ -18,8 +19,8 @@ import { t } from '@/i18n/index.jsx';
 
 const ROLE_OPTIONS = Object.entries(ROLE_LABEL).map(([value, label]) => ({ value, label }));
 
-const UserForm = ({ open, onClose, onSubmit, saving, isAdmin }) => {
-  const [form, setForm] = useState({ name: '', email: '', role: 'media_buyer', phone: '', client_id: '' });
+const UserForm = ({ open, onClose, onSubmit, saving, isAdmin, initialRole = 'media_buyer' }) => {
+  const [form, setForm] = useState({ name: '', email: '', role: initialRole, phone: '', client_id: '' });
   const set = (key) => (e) => setForm({ ...form, [key]: e.target.value });
   const isClient = form.role === 'client';
 
@@ -88,7 +89,12 @@ const UserForm = ({ open, onClose, onSubmit, saving, isAdmin }) => {
 export const UsersPage = () => {
   const qc = useQueryClient();
   const { can, user: me } = useAuth();
-  const [creating, setCreating] = useState(false);
+  const [params, setParams] = useSearchParams();
+  // /users?new=media_buyer opens the form straight away (linked from the team page).
+  const [creating, setCreating] = useState(() => params.get('new') || false);
+  useEffect(() => {
+    if (params.has('new')) setParams({}, { replace: true });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const [issued, setIssued] = useState(null);
   const [search, setSearch] = useState('');
 
@@ -233,6 +239,7 @@ export const UsersPage = () => {
         <UserForm
           open
           isAdmin={isAdmin}
+          initialRole={typeof creating === 'string' && ROLE_LABEL[creating] ? creating : 'media_buyer'}
           saving={create.isPending}
           onClose={() => setCreating(false)}
           onSubmit={(payload) => create.mutate(payload)}

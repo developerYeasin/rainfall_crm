@@ -76,9 +76,14 @@ export const TeamPage = () => {
         title="টিম পারফরম্যান্স"
         subtitle="কে কোন ক্লায়েন্ট ও অ্যাড অ্যাকাউন্ট দেখছে, কাজের চাপ ও পেন্ডিং টাস্ক"
         actions={
-          <Link to="/users" className="text-sm font-medium text-brand-700 hover:underline">
-            {t('ইউজার ও রোল ম্যানেজ করুন →')}
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link to="/users" className="text-sm font-medium text-brand-700 hover:underline">
+              {t('ইউজার ও রোল ম্যানেজ করুন →')}
+            </Link>
+            <Link to="/users?new=media_buyer" className="rounded-lg bg-brand-600 px-3.5 py-2 text-sm font-medium text-white shadow-sm hover:bg-brand-700">
+              {t('+ নতুন টিম মেম্বার')}
+            </Link>
+          </div>
         }
       />
       <Card>

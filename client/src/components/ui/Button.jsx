@@ -23,8 +23,8 @@ export const Button = ({ variant = 'primary', size = 'md', className, loading, c
       SIZES[size],
       className,
     )}
-    disabled={loading || props.disabled}
     {...props}
+    disabled={loading || props.disabled}
   >
     {loading && (
       <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" />

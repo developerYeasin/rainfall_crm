@@ -27,6 +27,8 @@ export const chatApi = {
   unread: () => api.get('/chat/unread').then(unwrap),
   thread: (userId) => api.get(`/chat/${userId}`).then(unwrap),
   send: (userId, body) => api.post(`/chat/${userId}`, { body }).then(unwrap),
+  channel: () => api.get('/chat/channel/team').then(unwrap),
+  sendChannel: (body) => api.post('/chat/channel/team', { body }).then(unwrap),
 };
 
 export const cyclesApi = {
@@ -114,6 +116,7 @@ export const activityApi = {
 /** Client-dashboard modules next to the ledger — same client scoping as businessApi. */
 export const portalApi = {
   ads: (clientId, params) => api.get('/business/ads', scoped(clientId, params)).then(unwrap),
+  syncAds: (clientId) => api.post('/business/ads/sync', null, scoped(clientId)).then(unwrap),
   accounting: (clientId, year) => api.get('/business/accounting', scoped(clientId, { year })).then(unwrap),
   invoices: (clientId) => api.get('/business/invoices', scoped(clientId)).then(unwrapList),
   messages: (clientId) => api.get('/business/messages', scoped(clientId)).then(unwrap),
@@ -127,6 +130,9 @@ export const adAccountsApi = {
   update: ({ id, ...payload }) => api.patch(`/ad-accounts/${id}`, payload).then(unwrap),
   remove: (id) => api.delete(`/ad-accounts/${id}`),
   sync: (id) => api.post(`/ad-accounts/${id}/sync`).then(unwrap),
+  metaConnectUrl: (clientId) => api.get('/ad-accounts/meta/connect-url', { params: { client_id: clientId || undefined } }).then(unwrap),
+  metaDiscover: (payload) => api.post('/ad-accounts/meta/discover', payload).then(unwrap),
+  metaImport: (payload) => api.post('/ad-accounts/meta/import', payload).then(unwrap),
 };
 
 export const financeApi = {

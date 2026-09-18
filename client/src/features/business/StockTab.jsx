@@ -242,13 +242,6 @@ export const StockTab = () => {
         </div>
       ),
     },
-    { key: 'pre_order_qty', header: 'প্রি-অর্ডার', align: 'right', render: (r) => number(r.pre_order_qty) },
-    {
-      key: 'available',
-      header: 'প্রি-অর্ডারের পর',
-      align: 'right',
-      render: (r) => <span className={r.available < 0 ? 'font-semibold text-rose-600' : undefined}>{number(r.available)}</span>,
-    },
     { key: 'stock_value', header: 'স্টক মূল্য', align: 'right', render: (r) => currency(r.stock_value) },
     ...(canWrite
       ? [
@@ -314,7 +307,12 @@ export const StockTab = () => {
         />
         <StatTile label="স্টকের মূল্য" value={currency(totals.value)} hint="কেনা দামে" />
         <StatTile label="মোট সেল হয়েছে" value={t('{n} পিস', { n: number(totals.sold) })} hint="শুরু থেকে" />
-        <StatTile label="অপেক্ষমাণ প্রি-অর্ডার" value={t('{n} পিস', { n: number(totals.pre) })} />
+        <StatTile
+          label="স্টক অ্যালার্ট"
+          value={number(active.filter((p) => p.stock_status !== 'ok').length)}
+          tone={active.some((p) => p.stock_status === 'out') ? 'danger' : undefined}
+          hint="কম বা শেষ হয়ে যাওয়া প্রোডাক্ট"
+        />
       </div>
 
       <Card>

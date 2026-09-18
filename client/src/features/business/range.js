@@ -4,14 +4,13 @@ const fmt = (d) => format(d, 'yyyy-MM-dd');
 
 export const RANGE_OPTIONS = [
   { value: 'all', label: 'শুরু থেকে এখন পর্যন্ত' },
+  { value: 'today', label: 'আজ' },
+  { value: 'yesterday', label: 'গতকাল' },
+  { value: 'last_7', label: 'গত ৭ দিন' },
   { value: 'this_month', label: 'এই মাস' },
   { value: 'last_month', label: 'গত মাস' },
   { value: 'last_90', label: 'গত ৯০ দিন' },
   { value: 'this_year', label: 'এই বছর' },
-  { value: 'today', label: 'আজ' },
-  { value: 'yesterday', label: 'গতকাল' },
-  { value: 'last_7', label: 'গত ৭ দিন' },
-  { value: 'custom', label: 'তারিখ বেছে নিন (ক্যালেন্ডার)…' },
 ];
 
 /** Returns { from, to } query params; "all" sends none. `custom` uses the picked dates. */

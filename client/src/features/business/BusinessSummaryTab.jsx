@@ -42,7 +42,7 @@ export const BusinessSummaryTab = () => {
   if (isLoading) return <Loading />;
   if (error) return <ErrorState error={error} onRetry={refetch} />;
 
-  const { sales, pre_orders: pre, stock, marketing, expenses, profit, cash, purchases } = data;
+  const { sales, stock, marketing, expenses, profit, cash, purchases } = data;
   const nonMarketingExpenses = expenses.by_category.filter((e) => e.category !== 'marketing');
 
   const statusStrip = [
@@ -168,7 +168,6 @@ export const BusinessSummaryTab = () => {
             <table className="table">
               <tbody>
                 <Line label="সেলের পেমেন্ট পাওয়া" value={sales.cash_received} />
-                {pre.advance > 0 && <Line label="অর্ডারের অগ্রিম পেমেন্ট" value={pre.advance} />}
                 <Line total label="মোট ক্যাশ ইন" value={cash.in} />
                 <Line sign="−" label="স্টক কেনা" value={-purchases.cost} hint={t('{n} পিস', { n: number(purchases.qty) })} />
                 <Line sign="−" label="অ্যাড স্পেন্ড" value={-marketing.ad_spend} />
