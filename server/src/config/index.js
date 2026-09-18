@@ -41,7 +41,12 @@ export const config = {
     apiVersion: process.env.META_API_VERSION || 'v21.0',
     /** Business-partner system-user token, used for accounts without their own token. */
     accessToken: process.env.META_ACCESS_TOKEN || null,
+    /** Facebook app used for the "Connect with Facebook" button (OAuth). Both are needed to show it. */
+    appId: process.env.META_APP_ID || null,
+    appSecret: process.env.META_APP_SECRET || null,
   },
+  /** Public base URL of this API (for OAuth redirects). Falls back to the request's own host. */
+  apiPublicUrl: process.env.API_PUBLIC_URL || null,
   google: {
     apiVersion: process.env.GOOGLE_ADS_API_VERSION || 'v20',
     developerToken: process.env.GOOGLE_ADS_DEVELOPER_TOKEN || null,
@@ -57,7 +62,8 @@ export const config = {
   },
   jobs: {
     enabled: process.env.JOBS_ENABLED !== 'false',
-    adSyncHours: Number(process.env.AD_SYNC_INTERVAL_HOURS || 3),
+    // Near real-time by default: every 30 minutes (minimum 15).
+    adSyncHours: Number(process.env.AD_SYNC_INTERVAL_HOURS || 0.5),
     appUrl: process.env.APP_URL || 'http://localhost:5173',
   },
   smtp: {

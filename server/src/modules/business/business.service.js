@@ -221,7 +221,7 @@ export const businessService = {
     const available = product.in_stock + alreadyReserved;
     if (qty > available) {
       throw ApiError.badRequest(
-        `"${product.name}" স্টকে আছে ${Math.max(available, 0)} পিস — বাকিটা প্রি-অর্ডার হিসেবে নিন`,
+        `"${product.name}" স্টকে আছে ${Math.max(available, 0)} পিস — আগে স্টক যোগ করুন`,
       );
     }
   },

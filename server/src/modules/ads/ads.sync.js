@@ -8,6 +8,8 @@ import * as google from './google.client.js';
 import * as tiktok from './tiktok.client.js';
 
 const LEVELS = ['account', 'campaign', 'adset'];
+/** Meta also reports every individual ad, so clients see which creative works and what it costs. */
+const META_LEVELS = [...LEVELS, 'ad'];
 /** Platforms keep revising the last few days (attribution), so every sync re-pulls this window. */
 const REFRESH_DAYS = 3;
 const BACKFILL_DAYS = 30;
@@ -75,7 +77,7 @@ export const syncAccount = async (accountId) => {
     const until = toDateOnly(new Date());
     const since = addDays(until, -(account.last_synced_at ? REFRESH_DAYS : BACKFILL_DAYS));
     let total = 0;
-    for (const level of LEVELS) {
+    for (const level of account.platform === 'meta' ? META_LEVELS : LEVELS) {
       for (const [from, to] of dateWindows(since, until)) {
         const rows = await platform.fetchInsights({
           externalId: account.external_id,
@@ -144,6 +146,26 @@ const alertAnomalies = async () => {
       dedupeKey: `spend-${row.id}-${day}`,
     });
   }
+};
+
+/** Syncs a client's accounts that haven't synced in the last `freshMinutes` (portal "refresh now"). */
+export const syncClientAccounts = async (clientId, { freshMinutes = 5 } = {}) => {
+  const accounts = await query(
+    `SELECT id FROM ad_accounts WHERE client_id = ? AND is_active = 1
+       AND (last_synced_at IS NULL OR last_synced_at < NOW() - INTERVAL ? MINUTE)`,
+    [clientId, freshMinutes],
+  );
+  const results = { ok: 0, failed: 0, errors: [] };
+  for (const { id } of accounts) {
+    try {
+      await syncAccount(id);
+      results.ok += 1;
+    } catch (err) {
+      results.failed += 1;
+      results.errors.push(err.message);
+    }
+  }
+  return results;
 };
 
 /** Scheduled job: sync every active account, then raise spend alerts. One failure never stops the rest. */

@@ -11,7 +11,10 @@ const LEVEL_FIELDS = {
   account: ['account_id', 'account_name'],
   campaign: ['campaign_id', 'campaign_name'],
   adset: ['adset_id', 'adset_name', 'campaign_id'],
+  ad: ['ad_id', 'ad_name', 'adset_id', 'campaign_id'],
 };
+/** Each level's rows point at the level above: ad → ad set → campaign. */
+const PARENT_KEY = { adset: 'campaign_id', ad: 'adset_id' };
 const METRIC_FIELDS = ['spend', 'impressions', 'clicks', 'actions', 'action_values'];
 
 /** When an account has no explicit result action, the first one present wins. */
@@ -65,7 +68,7 @@ export const fetchInsights = async ({ externalId, token, level, since, until, re
         level,
         object_id: level === 'account' ? normaliseAccountId(externalId) : r[`${level}_id`],
         object_name: r[`${level}_name`] ?? null,
-        parent_id: level === 'adset' ? r.campaign_id : null,
+        parent_id: PARENT_KEY[level] ? r[PARENT_KEY[level]] : null,
         stat_date: r.date_start,
         spend: Number(r.spend || 0),
         impressions: Number(r.impressions || 0),
@@ -87,3 +90,62 @@ export const fetchAccountInfo = async ({ externalId, token }) =>
       access_token: token,
     })}`,
   );
+
+const oauthBase = () => `https://www.facebook.com/${config.meta.apiVersion}/dialog/oauth`;
+
+export const oauthConfigured = () => Boolean(config.meta.appId && config.meta.appSecret);
+
+/** Facebook login dialog asking for read access to the user's ad accounts. */
+export const oauthDialogUrl = ({ redirectUri, state }) =>
+  `${oauthBase()}?${new URLSearchParams({
+    client_id: config.meta.appId,
+    redirect_uri: redirectUri,
+    state,
+    scope: 'ads_read,business_management',
+    response_type: 'code',
+  })}`;
+
+/** Code → short-lived token → long-lived (~60 day) token. */
+export const exchangeCode = async ({ code, redirectUri }) => {
+  const short = await graphGet(
+    `${BASE()}/oauth/access_token?${new URLSearchParams({
+      client_id: config.meta.appId,
+      client_secret: config.meta.appSecret,
+      redirect_uri: redirectUri,
+      code,
+    })}`,
+  );
+  const long = await graphGet(
+    `${BASE()}/oauth/access_token?${new URLSearchParams({
+      grant_type: 'fb_exchange_token',
+      client_id: config.meta.appId,
+      client_secret: config.meta.appSecret,
+      fb_exchange_token: short.access_token,
+    })}`,
+  ).catch(() => short);
+  return long.access_token;
+};
+
+/** Every ad account the token can read. */
+export const listAdAccounts = async (token) => {
+  const accounts = [];
+  let url = `${BASE()}/me/adaccounts?${new URLSearchParams({
+    fields: 'account_id,name,currency,account_status,business{name}',
+    limit: '200',
+    access_token: token,
+  })}`;
+  while (url) {
+    const page = await graphGet(url);
+    for (const a of page.data || []) {
+      accounts.push({
+        external_id: a.account_id,
+        name: a.name,
+        currency: a.currency,
+        active: a.account_status === 1,
+        business: a.business?.name || null,
+      });
+    }
+    url = page.paging?.next || null;
+  }
+  return accounts;
+};

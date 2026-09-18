@@ -7,6 +7,7 @@ import { ApiError } from '../../utils/ApiError.js';
 import { notifyUsers } from '../../utils/notify.js';
 import { query, queryOne } from '../../db/pool.js';
 import { ROLES } from '../../config/constants.js';
+import { config } from '../../config/index.js';
 
 /**
  * Direct messages across the whole ecosystem. Staff can reach every active login;
@@ -82,7 +83,66 @@ router.get(
     const { unread } = await queryOne('SELECT COUNT(*) AS unread FROM direct_messages WHERE recipient_id = ? AND read_at IS NULL', [
       req.user.id,
     ]);
-    ok(res, { unread: Number(unread) });
+    const channel = req.user.role === ROLES.CLIENT ? 0 : await channelUnread(req.user.id);
+    ok(res, { unread: Number(unread) + channel, direct: Number(unread), channel });
+  }),
+);
+
+// ---------------------------------------------------------------- team channel (staff only)
+const channelUnread = async (userId) => {
+  const row = await queryOne(
+    `SELECT COUNT(*) AS n FROM channel_messages
+     WHERE sender_id <> ? AND id > COALESCE((SELECT last_read_id FROM channel_reads WHERE user_id = ?), 0)`,
+    [userId, userId],
+  );
+  return Number(row.n);
+};
+
+const staffOnlyChannel = (req, res, next) =>
+  req.user.role === ROLES.CLIENT ? next(ApiError.forbidden('এই তথ্য দেখার অনুমতি নেই')) : next();
+
+const CHANNEL_SELECT = `SELECT m.id, m.sender_id, u.name AS sender_name, u.role AS sender_role, m.body, m.created_at
+  FROM channel_messages m JOIN users u ON u.id = m.sender_id`;
+
+router.get(
+  '/channel/team',
+  staffOnlyChannel,
+  asyncHandler(async (req, res) => {
+    const rows = await query(`${CHANNEL_SELECT} ORDER BY m.id DESC LIMIT 200`);
+    const lastId = rows[0]?.id ?? 0;
+    await query(
+      'INSERT INTO channel_reads (user_id, last_read_id) VALUES (?, ?) ON DUPLICATE KEY UPDATE last_read_id = GREATEST(last_read_id, VALUES(last_read_id))',
+      [req.user.id, lastId],
+    );
+    const { members } = await queryOne("SELECT COUNT(*) AS members FROM users WHERE is_active = 1 AND role <> 'client'");
+    ok(res, { members: Number(members), messages: rows.reverse() });
+  }),
+);
+
+router.post(
+  '/channel/team',
+  staffOnlyChannel,
+  validate(z.object({ body: z.string().trim().min(1, 'মেসেজ লিখুন').max(4000) })),
+  asyncHandler(async (req, res) => {
+    const result = await query('INSERT INTO channel_messages (sender_id, body) VALUES (?, ?)', [req.user.id, req.body.body]);
+    await query(
+      'INSERT INTO channel_reads (user_id, last_read_id) VALUES (?, ?) ON DUPLICATE KEY UPDATE last_read_id = VALUES(last_read_id)',
+      [req.user.id, result.insertId],
+    );
+    const team = await query("SELECT id FROM users WHERE is_active = 1 AND role <> 'client' AND id <> ?", [req.user.id]);
+    await notifyUsers(
+      team.map((u) => u.id),
+      {
+        type: 'channel_message',
+        data: { from: req.user.name, preview: req.body.body.slice(0, 120) },
+        link: '/inbox/team',
+        email: {
+          subject: `${req.user.name} in the team channel — Rainfall CRM`,
+          text: `${req.user.name} wrote in the team channel:\n\n${req.body.body}\n\nReply here: ${config.jobs.appUrl}/inbox/team`,
+        },
+      },
+    );
+    created(res, await queryOne(`${CHANNEL_SELECT} WHERE m.id = ?`, [result.insertId]));
   }),
 );
 
@@ -126,7 +186,7 @@ router.post(
       link: `/inbox/${req.user.id}`,
       email: {
         subject: `New message from ${req.user.name} — Rainfall CRM`,
-        text: `${req.user.name} sent you a message:\n\n${req.body.body}\n\nReply in Rainfall CRM.`,
+        text: `${req.user.name} sent you a message:\n\n${req.body.body}\n\nReply here: ${config.jobs.appUrl}/inbox/${req.user.id}`,
       },
     });
     created(res, message);

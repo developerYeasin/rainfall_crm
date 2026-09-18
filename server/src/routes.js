@@ -11,7 +11,8 @@ import taskRoutes from './modules/tasks/task.routes.js';
 import contentRoutes from './modules/content/content.routes.js';
 import dashboardRoutes from './modules/dashboard/dashboard.routes.js';
 import activityRoutes from './modules/activity/activity.routes.js';
-import adAccountRoutes from './modules/ads/ads.routes.js';
+import adAccountRoutes, { integrationsRouter } from './modules/ads/ads.routes.js';
+import { oauthConfigured } from './modules/ads/meta.client.js';
 import financeRoutes from './modules/finance/finance.routes.js';
 import chatRoutes from './modules/chat/chat.routes.js';
 import notificationRoutes from './modules/notifications/notification.routes.js';
@@ -33,6 +34,8 @@ import {
 const router = Router();
 
 router.use('/auth', authRoutes);
+// OAuth callbacks from ad platforms arrive as plain browser redirects (no bearer token).
+router.use('/integrations', integrationsRouter);
 
 // Everything below requires a valid access token.
 router.use(authenticate);
@@ -52,6 +55,7 @@ router.get('/meta', (req, res) =>
       adPlatforms: AD_PLATFORMS,
       agencyExpenseCategories: AGENCY_EXPENSE_CATEGORIES,
       taskPriorities: TASK_PRIORITIES,
+      metaConnect: oauthConfigured(),
     },
   }),
 );

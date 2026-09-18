@@ -162,7 +162,7 @@ export const adsService = {
     const orderBucket = ORDER_GROUP_EXPR[group] || ORDER_GROUP_EXPR.day;
     const base = [clientId, since, until];
 
-    const [totals, series, campaigns, adsets, salesSeries, salesTotal, accounts] = await Promise.all([
+    const [totals, series, campaigns, adsets, ads, salesSeries, salesTotal, accounts] = await Promise.all([
       queryOne(
         `SELECT SUM(spend) AS spend, SUM(impressions) AS impressions, SUM(clicks) AS clicks,
                 SUM(results) AS results, SUM(purchase_value) AS purchase_value
@@ -187,6 +187,13 @@ export const adsService = {
         `SELECT object_id, parent_id, MAX(object_name) AS name, SUM(spend) AS spend, SUM(impressions) AS impressions,
                 SUM(clicks) AS clicks, SUM(results) AS results, SUM(purchase_value) AS purchase_value
          FROM ad_insights WHERE client_id = ? AND level = 'adset' AND stat_date BETWEEN ? AND ?
+         GROUP BY object_id, parent_id ORDER BY spend DESC`,
+        base,
+      ),
+      query(
+        `SELECT object_id, parent_id, MAX(object_name) AS name, SUM(spend) AS spend, SUM(impressions) AS impressions,
+                SUM(clicks) AS clicks, SUM(results) AS results, SUM(purchase_value) AS purchase_value
+         FROM ad_insights WHERE client_id = ? AND level = 'ad' AND stat_date BETWEEN ? AND ?
          GROUP BY object_id, parent_id ORDER BY spend DESC`,
         base,
       ),
@@ -239,8 +246,21 @@ export const adsService = {
         id: c.object_id,
         name: c.name,
         ...withRatios(c),
-        adsets: adsets.filter((s) => s.parent_id === c.object_id).map((s) => ({ id: s.object_id, name: s.name, ...withRatios(s) })),
+        adsets: adsets
+          .filter((s) => s.parent_id === c.object_id)
+          .map((s) => ({
+            id: s.object_id,
+            name: s.name,
+            ...withRatios(s),
+            ads: ads.filter((a) => a.parent_id === s.object_id).map((a) => ({ id: a.object_id, name: a.name, ...withRatios(a) })),
+          })),
       })),
+      // Every individual ad ranked by spend, with the campaign / ad set it belongs to.
+      ads: ads.map((a) => {
+        const adset = adsets.find((s) => s.object_id === a.parent_id);
+        const campaign = adset && campaigns.find((c) => c.object_id === adset.parent_id);
+        return { id: a.object_id, name: a.name, adset: adset?.name ?? null, campaign: campaign?.name ?? null, ...withRatios(a) };
+      }),
     };
   },
 };

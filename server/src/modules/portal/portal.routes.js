@@ -5,11 +5,13 @@ import { asyncHandler } from '../../utils/asyncHandler.js';
 import { ok, created } from '../../utils/response.js';
 import { ApiError } from '../../utils/ApiError.js';
 import { logActivity } from '../../utils/activity.js';
-import { clientStaffIds, clientUserIds, notifyUsers } from '../../utils/notify.js';
+import { adminIds, clientStaffIds, clientUserIds, notifyUsers } from '../../utils/notify.js';
 import { query, queryOne } from '../../db/pool.js';
 import { toDateOnly } from '../../utils/date.js';
 import { ROLES } from '../../config/constants.js';
+import { config } from '../../config/index.js';
 import { adsService } from '../ads/ads.service.js';
+import { syncClientAccounts } from '../ads/ads.sync.js';
 import { financeService } from '../finance/finance.service.js';
 import { businessService } from '../business/business.service.js';
 import { sendWorkbook, accountingWorkbook, salesWorkbook, sendAccountingPdf } from '../exports/reports.js';
@@ -32,6 +34,12 @@ router.get(
   '/ads',
   validate(z.object({ from: dateStr.optional(), to: dateStr.optional(), group: z.enum(['day', 'week', 'month']).default('day') }), 'query'),
   asyncHandler(async (req, res) => ok(res, await adsService.insights(req.clientId, req.validatedQuery))),
+);
+
+/** "Refresh now": pulls fresh numbers from the ad platforms (accounts synced in the last 5 minutes are skipped). */
+router.post(
+  '/ads/sync',
+  asyncHandler(async (req, res) => ok(res, await syncClientAccounts(req.clientId, { freshMinutes: 5 }))),
 );
 
 // ---------------------------------------------------------------- accounting & invoices
@@ -151,14 +159,18 @@ router.post(
       const preview = req.body.body.slice(0, 120);
       const data = { client: client.name, from: req.user.name, preview, kind };
       // Every recipient also gets the message in their account mailbox.
-      const email = {
+      const mail = (path) => ({
         subject: kind === 'announcement' ? `Update from Rainfall Media — ${client.name}` : `New message from ${req.user.name} — ${client.name}`,
-        text: `${req.body.body}\n\n— ${req.user.name}\nReply in Rainfall CRM.`,
-      };
+        text: `${req.body.body}\n\n— ${req.user.name}\n\nReply here: ${config.jobs.appUrl}${path}`,
+      });
+      const staffMail = mail(`/clients/${req.clientId}/business/messages`);
       if (isClient(req)) {
-        await notifyUsers(await clientStaffIds(req.clientId), { type: 'client_message', data, link: 'business:messages', clientId: req.clientId, email });
+        // Admins always hear from clients, even when nobody is assigned yet.
+        const staff = [...(await clientStaffIds(req.clientId)), ...(await adminIds())];
+        await notifyUsers(staff, { type: 'client_message', data, link: 'business:messages', clientId: req.clientId, email: staffMail });
       } else {
         const staff = (await clientStaffIds(req.clientId)).filter((id) => id !== req.user.id);
+        const email = mail('/business/messages');
         await notifyUsers(await clientUserIds(req.clientId), {
           type: kind === 'announcement' ? 'announcement' : 'agency_message',
           data,
@@ -166,7 +178,7 @@ router.post(
           clientId: req.clientId,
           email,
         });
-        await notifyUsers(staff, { type: 'agency_message', data, link: 'business:messages', clientId: req.clientId, email });
+        await notifyUsers(staff, { type: 'agency_message', data, link: 'business:messages', clientId: req.clientId, email: staffMail });
       }
     }
     created(res, message);

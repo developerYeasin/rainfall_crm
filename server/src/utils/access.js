@@ -6,14 +6,15 @@ import { ROLES } from '../config/constants.js';
 /**
  * Tenant isolation. Every client-owned read or write goes through one of these helpers.
  *
- *   admin   → every client (scope = null)
+ *   admin, manager → every client (scope = null)
  *   client  → only users.client_id
  *   staff   → clients they are assigned to (client_staff) or account-manage
  *
  * Out-of-scope clients answer 404, so ids cannot be probed through the URL.
  */
 
-export const GLOBAL_ROLES = [ROLES.ADMIN];
+// Admins and managers run the agency, so they see every client.
+export const GLOBAL_ROLES = [ROLES.ADMIN, ROLES.MANAGER];
 export const hasGlobalAccess = (user) => GLOBAL_ROLES.includes(user?.role);
 
 const loadScope = async (user) => {
