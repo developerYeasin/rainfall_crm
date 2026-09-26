@@ -116,6 +116,7 @@ export const activityApi = {
 /** Client-dashboard modules next to the ledger — same client scoping as businessApi. */
 export const portalApi = {
   ads: (clientId, params) => api.get('/business/ads', scoped(clientId, params)).then(unwrap),
+  adsDaily: (clientId, date) => api.get('/business/ads/daily', scoped(clientId, { date })).then(unwrap),
   syncAds: (clientId) => api.post('/business/ads/sync', null, scoped(clientId)).then(unwrap),
   accounting: (clientId, year) => api.get('/business/accounting', scoped(clientId, { year })).then(unwrap),
   invoices: (clientId) => api.get('/business/invoices', scoped(clientId)).then(unwrapList),
@@ -133,6 +134,12 @@ export const adAccountsApi = {
   metaConnectUrl: (clientId) => api.get('/ad-accounts/meta/connect-url', { params: { client_id: clientId || undefined } }).then(unwrap),
   metaDiscover: (payload) => api.post('/ad-accounts/meta/discover', payload).then(unwrap),
   metaImport: (payload) => api.post('/ad-accounts/meta/import', payload).then(unwrap),
+};
+
+/** Admin-only: Meta app + agency access token (stored encrypted on the server). */
+export const settingsApi = {
+  meta: (check = true) => api.get('/settings/meta', { params: { check } }).then(unwrap),
+  saveMeta: (payload) => api.put('/settings/meta', payload).then(unwrap),
 };
 
 export const financeApi = {

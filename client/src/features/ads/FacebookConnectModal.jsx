@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { adAccountsApi, clientsApi, metaApi, teamApi } from '@/api/endpoints.js';
@@ -9,13 +10,16 @@ import { Field, Input, Select } from '@/components/ui/Field.jsx';
 import { t } from '@/i18n/index.jsx';
 
 /**
- * Direct Facebook connection: log in with Facebook (or paste a system-user token), pick the
+ * Direct Facebook connection: use the agency token saved on the Meta setup page, log in with
+ * Facebook, or paste a token — then pick the
  * ad accounts, and they are linked to a client and synced right away.
  * `session` arrives from the OAuth callback redirect (?meta_session=…).
  */
 export const FacebookConnectModal = ({ session, initialClientId, onClose, onDone }) => {
   const [clientId, setClientId] = useState(initialClientId ? String(initialClientId) : '');
   const [token, setToken] = useState('');
+  // Which token the listed accounts came from: 'saved' | 'pasted' (a session comes from the URL).
+  const [via, setVia] = useState(null);
   const [picked, setPicked] = useState({});
   const [assignee, setAssignee] = useState('');
 
@@ -23,10 +27,10 @@ export const FacebookConnectModal = ({ session, initialClientId, onClose, onDone
   const clients = useQuery({ queryKey: ['clients', 'options'], queryFn: () => clientsApi.list({ limit: 200, sortBy: 'c.name', sortDir: 'asc' }) });
   const team = useQuery({ queryKey: ['team'], queryFn: teamApi.list });
 
-  const source = session ? { session } : { access_token: token.trim() };
+  const source = session ? { session } : via === 'saved' ? { use_saved: true } : { access_token: token.trim() };
 
   const discover = useMutation({
-    mutationFn: () => adAccountsApi.metaDiscover(source),
+    mutationFn: (src) => adAccountsApi.metaDiscover(src),
     onSuccess: (accounts) => {
       setPicked({});
       if (!accounts.length) toast.error(t('এই Facebook অ্যাকাউন্টে কোনো অ্যাড অ্যাকাউন্ট পাওয়া যায়নি'));
@@ -34,10 +38,16 @@ export const FacebookConnectModal = ({ session, initialClientId, onClose, onDone
     onError: (err) => toast.error(err.message),
   });
 
-  // Returning from Facebook: list the accounts straight away.
+  const loadSaved = () => {
+    setVia('saved');
+    discover.mutate({ use_saved: true });
+  };
+
+  // Returning from Facebook, or an agency token is already saved: list the accounts straight away.
   useEffect(() => {
-    if (session) discover.mutate();
-  }, [session]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (session) discover.mutate({ session });
+    else if (meta.data?.metaToken && !via) loadSaved();
+  }, [session, meta.data?.metaToken]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const login = useMutation({
     mutationFn: () => adAccountsApi.metaConnectUrl(clientId ? Number(clientId) : undefined),
@@ -109,6 +119,28 @@ export const FacebookConnectModal = ({ session, initialClientId, onClose, onDone
           </Field>
         </div>
 
+        {!session && meta.data && (
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-brand-100 bg-brand-50/50 p-4">
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-slate-800">{t('এজেন্সির সেভ করা টোকেন')}</p>
+              <p className="mt-1 text-xs text-slate-500">
+                {meta.data.metaToken
+                  ? t('Meta সেটআপে সেভ করা System user টোকেন যেসব অ্যাড অ্যাকাউন্ট দেখতে পারে, সব নিচে আসবে।')
+                  : t('এখনো কোনো টোকেন সেভ করা নেই।')}
+              </p>
+            </div>
+            {meta.data.metaToken ? (
+              <Button variant="secondary" loading={discover.isPending && via === 'saved'} onClick={loadSaved}>
+                {t('সেভ করা টোকেন দিয়ে লোড করুন')}
+              </Button>
+            ) : (
+              <Link to="/settings/meta" className="text-sm font-medium text-brand-700 hover:underline" onClick={onClose}>
+                {t('Meta সেটআপ করুন →')}
+              </Link>
+            )}
+          </div>
+        )}
+
         {!session && (
           <div className="grid gap-4 rounded-xl border border-slate-200 p-4 md:grid-cols-2">
             <div>
@@ -124,7 +156,7 @@ export const FacebookConnectModal = ({ session, initialClientId, onClose, onDone
               </Button>
               {meta.data && !meta.data.metaConnect && (
                 <p className="mt-2 text-xs text-amber-700">
-                  {t('সার্ভারে META_APP_ID ও META_APP_SECRET সেট করলে এই বাটন চালু হবে। ততক্ষণ পাশের টোকেন ব্যবহার করুন।')}
+                  {t('Meta সেটআপ পেজে App ID ও App Secret দিলে এই বাটন চালু হবে। ততক্ষণ পাশের টোকেন ব্যবহার করুন।')}
                 </p>
               )}
             </div>
@@ -133,7 +165,15 @@ export const FacebookConnectModal = ({ session, initialClientId, onClose, onDone
               <p className="mt-1 text-xs text-slate-500">{t('Business Manager → System users থেকে ads_read পারমিশনসহ টোকেন।')}</p>
               <div className="mt-3 flex gap-2">
                 <Input type="password" placeholder="EAAB…" value={token} onChange={(e) => setToken(e.target.value)} />
-                <Button variant="secondary" loading={discover.isPending} disabled={token.trim().length < 20} onClick={() => discover.mutate()}>
+                <Button
+                  variant="secondary"
+                  loading={discover.isPending && via === 'pasted'}
+                  disabled={token.trim().length < 20}
+                  onClick={() => {
+                    setVia('pasted');
+                    discover.mutate({ access_token: token.trim() });
+                  }}
+                >
                   খুঁজুন
                 </Button>
               </div>

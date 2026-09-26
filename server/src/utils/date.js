@@ -25,3 +25,14 @@ export const weekNoFor = (dateStr, cycleStart, weeksCount = 4) => {
   if (diff < 0) return 1;
   return Math.min(weeksCount, Math.floor(diff / 7) + 1);
 };
+
+/**
+ * Today's date (YYYY-MM-DD) in the agency's reporting time zone, not the server's.
+ * A UTC server would otherwise still say "yesterday" until 6 AM in Dhaka.
+ */
+export const todayIn = (timeZone, now = new Date()) =>
+  new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(now);
+
+/** "HH:MM" wall-clock time in a time zone. */
+export const clockIn = (timeZone, now = new Date()) =>
+  new Intl.DateTimeFormat('en-GB', { timeZone, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(now);

@@ -43,6 +43,7 @@ const NAV = [
   { to: '/finance', label: 'ফাইন্যান্স', icon: 'wallet', roles: ['admin', 'manager'] },
   { to: '/team', label: 'টিম পারফরম্যান্স', icon: 'users', roles: ['admin', 'manager'] },
   { to: '/users', label: 'ইউজার ও রোল', icon: 'settings', roles: ['admin', 'manager'] },
+  { to: '/settings/meta', label: 'Meta সেটআপ', icon: 'settings', roles: ['admin'] },
 ];
 
 const Brand = () => (

@@ -12,7 +12,9 @@ import contentRoutes from './modules/content/content.routes.js';
 import dashboardRoutes from './modules/dashboard/dashboard.routes.js';
 import activityRoutes from './modules/activity/activity.routes.js';
 import adAccountRoutes, { integrationsRouter } from './modules/ads/ads.routes.js';
-import { oauthConfigured } from './modules/ads/meta.client.js';
+import { getMetaSettings } from './modules/settings/meta.settings.js';
+import settingsRoutes from './modules/settings/settings.routes.js';
+import { asyncHandler } from './utils/asyncHandler.js';
 import financeRoutes from './modules/finance/finance.routes.js';
 import chatRoutes from './modules/chat/chat.routes.js';
 import notificationRoutes from './modules/notifications/notification.routes.js';
@@ -40,7 +42,8 @@ router.use('/integrations', integrationsRouter);
 // Everything below requires a valid access token.
 router.use(authenticate);
 
-router.get('/meta', (req, res) =>
+router.get('/meta', asyncHandler(async (req, res) => {
+  const metaSettings = await getMetaSettings();
   res.json({
     success: true,
     data: {
@@ -55,10 +58,12 @@ router.get('/meta', (req, res) =>
       adPlatforms: AD_PLATFORMS,
       agencyExpenseCategories: AGENCY_EXPENSE_CATEGORIES,
       taskPriorities: TASK_PRIORITIES,
-      metaConnect: oauthConfigured(),
+      // Facebook login button needs the app id + secret; "use saved token" needs the agency token.
+      metaConnect: !!(metaSettings.appId && metaSettings.appSecret),
+      metaToken: !!metaSettings.accessToken,
     },
-  }),
-);
+  });
+}));
 
 // Open to every login but always scoped: notifications by user, /business/* by client.
 router.use('/notifications', notificationRoutes);
@@ -79,5 +84,6 @@ router.use('/ad-accounts', adAccountRoutes);
 router.use('/finance', financeRoutes);
 router.use('/agency-tasks', agencyTaskRoutes);
 router.use('/team', teamRouter);
+router.use('/settings', settingsRoutes);
 
 export default router;

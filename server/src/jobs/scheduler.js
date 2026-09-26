@@ -2,7 +2,8 @@ import { query } from '../db/pool.js';
 import { config } from '../config/index.js';
 import { clientUserIds, adminIds, notifyUsers } from '../utils/notify.js';
 import { decorateInvoice } from '../modules/finance/finance.service.js';
-import { syncAllAccounts } from '../modules/ads/ads.sync.js';
+import { dailyAdReport, syncAllAccounts } from '../modules/ads/ads.sync.js';
+import { clockIn, todayIn } from '../utils/date.js';
 
 /**
  * In-process scheduler. Jobs are idempotent (dedupe keys on notifications, upserts on insights),
@@ -73,6 +74,29 @@ export const overdueTasks = async () => {
   return { tasks: rows.length };
 };
 
+/**
+ * Runs `fn` once a day at `time` ("HH:MM") in `timeZone`. Checks the clock every 30 s instead of
+ * computing one long timeout, so sleep/clock drift or DST never makes it skip a day.
+ */
+const daily = (time, timeZone, fn) => {
+  let lastDay = null;
+  const tick = () => {
+    const now = new Date();
+    const day = todayIn(timeZone, now);
+    if (lastDay !== day && clockIn(timeZone, now) >= time) {
+      // Started after today's run time: wait for tomorrow instead of firing at boot.
+      if (lastDay === null && clockIn(timeZone, now) > time) {
+        lastDay = day;
+        return;
+      }
+      lastDay = day;
+      fn();
+    }
+  };
+  tick();
+  setInterval(tick, 30_000).unref();
+};
+
 export const startScheduler = () => {
   if (!config.jobs.enabled) {
     console.log('[job] scheduler disabled (JOBS_ENABLED=false)');
@@ -86,5 +110,10 @@ export const startScheduler = () => {
   setTimeout(hourly, 90_000).unref();
   setInterval(adSync, Math.max(config.jobs.adSyncHours, 0.25) * HOUR).unref();
   setInterval(hourly, HOUR).unref();
-  console.log(`[job] scheduler on — ad sync every ${config.jobs.adSyncHours}h, reminders hourly`);
+  // The day that just ended, pulled fresh and sent to each client right after midnight.
+  const { timezone, dailyReportTime } = config.jobs;
+  daily(dailyReportTime, timezone, run('daily-ad-report', dailyAdReport));
+  console.log(
+    `[job] scheduler on — ad sync every ${config.jobs.adSyncHours}h, reminders hourly, daily ad report at ${dailyReportTime} ${timezone}`,
+  );
 };

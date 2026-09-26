@@ -191,11 +191,20 @@ assigning an ad account adds the person to that client automatically.
 Ad spend is never counted twice: when a month has synced ad-account data it is used, otherwise the manual performance tracker.
 
 ### Meta Marketing API
-1. Create a System User token in the agency's Business Manager with `ads_read`, and set `META_ACCESS_TOKEN`
-   (or paste a per-account token when connecting an account; it's stored AES-256-GCM encrypted with `CREDENTIALS_KEY`).
-2. Ad accounts → Connect account → ad account id (`act_…`).
-3. The scheduler pulls account, campaign and ad-set insights every `AD_SYNC_INTERVAL_HOURS` (30-day backfill,
+Everything is set up from the admin panel — no `.env` edit needed:
+1. **Meta সেটআপ** (admin only, `/settings/meta`): enter the Meta developer app's App ID + App Secret and a
+   System User access token (`ads_read`, `business_management`, expiration "Never"). The page checks the token
+   live (owner, permissions, expiry, which ad accounts it can see) and has the step-by-step guide.
+   Values are stored AES-256-GCM encrypted in `app_settings` (key `CREDENTIALS_KEY`); a short-lived token is
+   swapped for a 60-day one automatically. `META_APP_ID` / `META_APP_SECRET` / `META_ACCESS_TOKEN` still work as a fallback.
+2. **Ad accounts → Facebook connect → "Load with saved token"**: pick the client and tick its ad accounts.
+   These accounts keep no token of their own, so renewing the agency token renews them all.
+3. The scheduler pulls account, campaign, ad-set and ad insights every `AD_SYNC_INTERVAL_HOURS` (30-day backfill,
    then the last 3 days each run because platforms revise recent days).
+4. **Daily report**: every day at `DAILY_REPORT_TIME` (default `00:05`, `REPORT_TIMEZONE` default `Asia/Dhaka`)
+   the day that just ended is re-synced and each client gets that day's spend/results as a notification
+   (and email when SMTP is set). The client's Ads page opens with a "Daily report" card (yesterday vs. the day
+   before, today so far, that day's campaigns).
 
 ### Google Ads API
 Set `GOOGLE_ADS_DEVELOPER_TOKEN`, `GOOGLE_ADS_CLIENT_ID`, `GOOGLE_ADS_CLIENT_SECRET`, `GOOGLE_ADS_REFRESH_TOKEN`

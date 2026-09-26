@@ -86,6 +86,10 @@ export const router = createBrowserRouter([
           { path: 'tasks', element: page(() => import('@/features/agencyTasks/AgencyTasksPage.jsx'), 'AgencyTasksPage') },
           { path: 'finance', element: leadsOnly(page(() => import('@/features/finance/FinancePage.jsx'), 'FinancePage')) },
           { path: 'team', element: leadsOnly(page(() => import('@/features/team/TeamPage.jsx'), 'TeamPage')) },
+          {
+            path: 'settings/meta',
+            element: <ProtectedRoute roles={['admin']}>{page(() => import('@/features/settings/MetaSetupPage.jsx'), 'MetaSetupPage')}</ProtectedRoute>,
+          },
           { path: 'users', element: leadsOnly(page(() => import('@/features/users/UsersPage.jsx'), 'UsersPage')) },
         ],
       },

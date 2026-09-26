@@ -37,6 +37,10 @@ export const config = {
   credentialsKey:
     process.env.CREDENTIALS_KEY ||
     (process.env.NODE_ENV === 'production' ? required('CREDENTIALS_KEY') : required('JWT_ACCESS_SECRET')),
+  /**
+   * Fallbacks only — the admin normally enters these in the app (Settings → Meta), which wins.
+   * See modules/settings/meta.settings.js.
+   */
   meta: {
     apiVersion: process.env.META_API_VERSION || 'v21.0',
     /** Business-partner system-user token, used for accounts without their own token. */
@@ -65,6 +69,10 @@ export const config = {
     // Near real-time by default: every 30 minutes (minimum 15).
     adSyncHours: Number(process.env.AD_SYNC_INTERVAL_HOURS || 0.5),
     appUrl: process.env.APP_URL || 'http://localhost:5173',
+    /** "Today" for ad reports and the daily midnight report follow this zone, not the server's. */
+    timezone: process.env.REPORT_TIMEZONE || 'Asia/Dhaka',
+    /** Wall-clock time (in `timezone`) when the day that just ended is pulled and sent to clients. */
+    dailyReportTime: process.env.DAILY_REPORT_TIME || '00:05',
   },
   smtp: {
     host: process.env.SMTP_HOST || null,

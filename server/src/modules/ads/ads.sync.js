@@ -1,8 +1,10 @@
 import { query, queryOne } from '../../db/pool.js';
 import { config } from '../../config/index.js';
 import { decryptSecret } from '../../utils/crypto.js';
-import { addDays, toDateOnly } from '../../utils/date.js';
-import { adminIds, notifyUsers } from '../../utils/notify.js';
+import { addDays, todayIn } from '../../utils/date.js';
+import { round, safeDiv } from '../../utils/metrics.js';
+import { adminIds, clientStaffIds, clientUserIds, notifyUsers } from '../../utils/notify.js';
+import { agencyMetaToken } from '../settings/meta.settings.js';
 import * as meta from './meta.client.js';
 import * as google from './google.client.js';
 import * as tiktok from './tiktok.client.js';
@@ -19,7 +21,8 @@ const CHUNK = 200;
 
 /** Each client returns the same row shape: { level, object_id, object_name, parent_id, stat_date, spend, … }. */
 const PLATFORMS = {
-  meta: { fetchInsights: meta.fetchInsights, envToken: () => config.meta.accessToken },
+  // The agency token from the Meta setup page (or META_ACCESS_TOKEN).
+  meta: { fetchInsights: meta.fetchInsights, envToken: agencyMetaToken },
   google: { fetchInsights: google.fetchInsights, envToken: () => config.google.refreshToken },
   tiktok: { fetchInsights: tiktok.fetchInsights, envToken: () => config.tiktok.accessToken },
 };
@@ -62,6 +65,28 @@ const upsertRows = async (account, rows) => {
   }
 };
 
+/** "Today" in the agency's reporting zone (Asia/Dhaka by default), whatever the server's clock zone is. */
+export const reportToday = () => todayIn(config.jobs.timezone);
+
+const pullAll = async (platform, account, token, since, until) => {
+  let total = 0;
+  for (const level of account.platform === 'meta' ? META_LEVELS : LEVELS) {
+    for (const [from, to] of dateWindows(since, until)) {
+      const rows = await platform.fetchInsights({
+        externalId: account.external_id,
+        token,
+        level,
+        since: from,
+        until: to,
+        resultAction: account.result_action,
+      });
+      await upsertRows(account, rows);
+      total += rows.length;
+    }
+  }
+  return total;
+};
+
 /** Pulls insights for one account and records success/failure on the account row. */
 export const syncAccount = async (accountId) => {
   const account = await queryOne('SELECT * FROM ad_accounts WHERE id = ?', [accountId]);
@@ -71,25 +96,22 @@ export const syncAccount = async (accountId) => {
     const platform = PLATFORMS[account.platform];
     if (!platform) throw new Error(`Unsupported platform: ${account.platform}`);
     // Meta/TikTok: access token. Google: OAuth refresh token. Each client explains what is missing.
-    const token = decryptSecret(account.access_token_enc) || platform.envToken();
-    if (!token && account.platform === 'meta') throw new Error('No Meta access token — add one to the account or set META_ACCESS_TOKEN');
+    const ownToken = decryptSecret(account.access_token_enc);
+    const fallbackToken = await platform.envToken();
+    const token = ownToken || fallbackToken;
+    if (!token && account.platform === 'meta') {
+      throw new Error('Meta অ্যাক্সেস টোকেন নেই — অ্যাডমিন প্যানেলের "Meta সেটআপ" পেজে টোকেন দিন');
+    }
 
-    const until = toDateOnly(new Date());
+    const until = reportToday();
     const since = addDays(until, -(account.last_synced_at ? REFRESH_DAYS : BACKFILL_DAYS));
-    let total = 0;
-    for (const level of account.platform === 'meta' ? META_LEVELS : LEVELS) {
-      for (const [from, to] of dateWindows(since, until)) {
-        const rows = await platform.fetchInsights({
-          externalId: account.external_id,
-          token,
-          level,
-          since: from,
-          until: to,
-          resultAction: account.result_action,
-        });
-        await upsertRows(account, rows);
-        total += rows.length;
-      }
+    let total;
+    try {
+      total = await pullAll(platform, account, token, since, until);
+    } catch (err) {
+      // An account's own token expired but the agency token is fine: carry on with the agency one.
+      if (!err.authError || !ownToken || !fallbackToken || fallbackToken === ownToken) throw err;
+      total = await pullAll(platform, account, fallbackToken, since, until);
     }
     await query('UPDATE ad_accounts SET last_synced_at = NOW(), last_sync_error = NULL WHERE id = ?', [account.id]);
     return { account_id: account.id, rows: total, since, until };
@@ -116,13 +138,17 @@ export const spendFlag = ({ is_active, daily_budget, yesterday_spend, avg_7d }) 
   return null;
 };
 
-export const SPEND_WINDOW_SQL = `
+/** Yesterday / prior-7-day spend per account, relative to "today" in the reporting zone. */
+export const spendWindowSql = () => {
+  const today = reportToday(); // always YYYY-MM-DD from Intl, safe to inline
+  return `
   SELECT ad_account_id,
-         COALESCE(SUM(CASE WHEN stat_date = CURDATE() - INTERVAL 1 DAY THEN spend END), 0) AS yesterday_spend,
-         COALESCE(SUM(CASE WHEN stat_date BETWEEN CURDATE() - INTERVAL 8 DAY AND CURDATE() - INTERVAL 2 DAY THEN spend END), 0) / 7 AS avg_7d
+         COALESCE(SUM(CASE WHEN stat_date = DATE('${today}') - INTERVAL 1 DAY THEN spend END), 0) AS yesterday_spend,
+         COALESCE(SUM(CASE WHEN stat_date BETWEEN DATE('${today}') - INTERVAL 8 DAY AND DATE('${today}') - INTERVAL 2 DAY THEN spend END), 0) / 7 AS avg_7d
   FROM ad_insights
-  WHERE level = 'account' AND stat_date >= CURDATE() - INTERVAL 8 DAY
+  WHERE level = 'account' AND stat_date >= DATE('${today}') - INTERVAL 8 DAY
   GROUP BY ad_account_id`;
+};
 
 const alertAnomalies = async () => {
   const rows = await query(
@@ -130,11 +156,11 @@ const alertAnomalies = async () => {
             w.yesterday_spend, w.avg_7d
      FROM ad_accounts a
      JOIN clients c ON c.id = a.client_id
-     LEFT JOIN (${SPEND_WINDOW_SQL}) w ON w.ad_account_id = a.id
+     LEFT JOIN (${spendWindowSql()}) w ON w.ad_account_id = a.id
      WHERE a.is_active = 1 AND a.last_synced_at IS NOT NULL`,
   );
   const admins = await adminIds();
-  const day = toDateOnly(new Date());
+  const day = reportToday();
   for (const row of rows) {
     const flag = spendFlag(row);
     if (!flag) continue;
@@ -183,4 +209,84 @@ export const syncAllAccounts = async () => {
   }
   await alertAnomalies();
   return results;
+};
+
+/**
+ * One client's whole-day ad numbers (account level, every connected account added up),
+ * shaped like Ads Manager's summary row.
+ */
+export const dayTotals = async (clientId, day) => {
+  const row = await queryOne(
+    `SELECT COALESCE(SUM(spend), 0) AS spend, COALESCE(SUM(impressions), 0) AS impressions, COALESCE(SUM(clicks), 0) AS clicks,
+            COALESCE(SUM(results), 0) AS results, COALESCE(SUM(purchase_value), 0) AS purchase_value, COUNT(*) AS rows_count
+     FROM ad_insights WHERE client_id = ? AND level = 'account' AND stat_date = ?`,
+    [clientId, day],
+  );
+  const spend = round(Number(row.spend));
+  const clicks = Number(row.clicks);
+  const impressions = Number(row.impressions);
+  const results = Number(row.results);
+  const value = round(Number(row.purchase_value));
+  return {
+    date: day,
+    has_data: Number(row.rows_count) > 0,
+    spend,
+    impressions,
+    clicks,
+    results,
+    purchase_value: value,
+    ctr: round(safeDiv(clicks, impressions), 6),
+    cpc: round(safeDiv(spend, clicks)),
+    cost_per_result: round(safeDiv(spend, results)),
+    roas: round(safeDiv(value, spend), 2),
+  };
+};
+
+/**
+ * Midnight job: pull the day that just ended from every ad account, then give each client
+ * (and the staff on it) that day's spend and results — in the bell, and by email when SMTP is set.
+ * Deduped per client per day, so a restart or a second instance never sends it twice.
+ */
+export const dailyAdReport = async () => {
+  const sync = await syncAllAccounts();
+  const day = addDays(reportToday(), -1);
+  const clients = await query(
+    'SELECT DISTINCT c.id, c.name FROM clients c JOIN ad_accounts a ON a.client_id = c.id AND a.is_active = 1',
+  );
+  let sent = 0;
+  for (const client of clients) {
+    const dedupeKey = `daily-ads-${client.id}-${day}`;
+    // Notifications dedupe themselves; this also stops a second email after a restart.
+    if (await queryOne('SELECT 1 FROM notifications WHERE dedupe_key = ? LIMIT 1', [dedupeKey])) continue;
+    const totals = await dayTotals(client.id, day);
+    if (!totals.has_data) continue;
+    const data = {
+      client: client.name,
+      date: day,
+      spend: totals.spend,
+      results: totals.results,
+      cost_per_result: totals.cost_per_result,
+      clicks: totals.clicks,
+    };
+    const common = { type: 'daily_ad_report', data, link: 'business:ads', clientId: client.id, dedupeKey };
+    await notifyUsers(await clientUserIds(client.id), {
+      ...common,
+      email: {
+        subject: `Ads report for ${day}: BDT ${totals.spend} spent, ${totals.results} results`,
+        text: [
+          `${client.name} — ads performance for ${day}`,
+          '',
+          `Spend: BDT ${totals.spend}`,
+          `Results: ${totals.results} (BDT ${totals.cost_per_result} per result)`,
+          `Clicks: ${totals.clicks} · CTR ${(totals.ctr * 100).toFixed(2)}% · CPC BDT ${totals.cpc}`,
+          `Impressions: ${totals.impressions}`,
+          '',
+          `Full report: ${config.jobs.appUrl}/business/ads`,
+        ].join('\n'),
+      },
+    });
+    await notifyUsers(await clientStaffIds(client.id), common);
+    sent += 1;
+  }
+  return { day, reports: sent, synced: sync.ok, sync_failed: sync.failed };
 };

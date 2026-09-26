@@ -22,6 +22,8 @@ const TEMPLATES = {
     }),
   payment_received: (d) => t('পেমেন্ট পাওয়া গেছে: {amount} ({invoice_no})', { ...d, amount: currency(d.amount) }),
   spend_alert: (d) => t('স্পেন্ড অ্যালার্ট — {client} / {account}: {flag} (গতকাল {spend})', { ...d, flag: t(FLAG_LABEL[d.flag] || d.flag), spend: currency(d.spend) }),
+  daily_ad_report: (d) =>
+    t('{date} এর অ্যাড রিপোর্ট — {client}: খরচ {spend}, রেজাল্ট {results}', { ...d, spend: currency(d.spend) }),
   task_assigned: (d) => t('নতুন টাস্ক: {title} ({by})', d),
   task_overdue: (d) => t('টাস্ক মেয়াদোত্তীর্ণ: {title}', d),
   announcement: (d) => t('ঘোষণা: {preview}', d),

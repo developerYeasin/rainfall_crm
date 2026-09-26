@@ -420,4 +420,96 @@ export const EN_AGENCY = {
   "Facebook সংযোগের মেয়াদ শেষ — আবার চেষ্টা করুন": "Facebook connection expired — try again",
   "Facebook অনুমতি দেওয়া হয়নি": "Facebook permission was not granted",
   'অর্ডারসমূহ': 'Orders',
+
+  // Meta setup (admin)
+  'Meta সেটআপ': 'Meta setup',
+  'Meta (Facebook) সেটআপ': 'Meta (Facebook) setup',
+  'একবার সেটআপ করলে সব ক্লায়েন্টের অ্যাড অ্যাকাউন্ট এই টোকেন দিয়ে কানেক্ট ও সিঙ্ক হবে':
+    "Set this up once — every client's ad account connects and syncs through this token",
+  'অ্যাড অ্যাকাউন্ট কানেক্ট করুন': 'Connect ad accounts',
+  'কানেকশন স্ট্যাটাস': 'Connection status',
+  'আবার যাচাই করুন': 'Check again',
+  'কপি করা যায়নি': 'Could not copy',
+  'টোকেন সেভ করা নেই': 'No token saved',
+  'Meta-র সাথে টোকেন যাচাই হচ্ছে…': 'Checking the token with Meta…',
+  'টোকেন কাজ করছে না': 'Token is not working',
+  'জানা নেই — App ID ও Secret দিলে দেখা যাবে': 'Unknown — add the App ID and Secret to see it',
+  'কখনো মেয়াদ শেষ হবে না': 'Never expires',
+  'মেয়াদ শেষ {date} ({n} দিন বাকি)': 'Expires {date} ({n} days left)',
+  'টোকেন ঠিক আছে': 'Token OK',
+  'ads_read পারমিশন নেই': 'Missing ads_read permission',
+  'টোকেন কার': 'Token owner',
+  'মেয়াদ': 'Expiry',
+  'পারমিশন': 'Permissions',
+  'সেভ হয়েছে, কিন্তু টোকেন কাজ করছে না — নিচে কারণ দেখুন': 'Saved, but the token is not working — see the reason below',
+  'সেভ হয়েছে — টোকেন ৬০ দিনের লং-লিভড টোকেনে বদলানো হয়েছে': 'Saved — the token was exchanged for a 60-day long-lived token',
+  'সেভ হয়েছে': 'Saved',
+  'কিছু বদলানো হয়নি': 'Nothing changed',
+  'এই টোকেন দিয়ে {n}টি অ্যাড অ্যাকাউন্ট দেখা যাচ্ছে': 'This token can see {n} ad accounts',
+  'কোনো অ্যাড অ্যাকাউন্ট নেই — System user-কে ক্লায়েন্টদের অ্যাড অ্যাকাউন্ট অ্যাসাইন করুন (ধাপ ৪)।':
+    "No ad accounts — assign the clients' ad accounts to the system user (step 4).",
+  'ডেটা প্রতি {m} মিনিটে নিজে থেকে সিঙ্ক হয়। প্রতিদিন {time} ({tz}) এ আগের দিনের পুরো রিপোর্ট ক্লায়েন্টকে নোটিফিকেশন ও ইমেইলে যায়।':
+    "Data syncs on its own every {m} minutes. Every day at {time} ({tz}) clients get the full report for the previous day as a notification and email.",
+  'অ্যাপ ও টোকেন': 'App & token',
+  'সব কিছু এনক্রিপ্ট করে সার্ভারে রাখা হয় — সেভের পর আর দেখা যায় না': 'Everything is stored encrypted on the server — it cannot be viewed after saving',
+  'ধাপ ৩ দেখুন': 'See step 3',
+  'বদলাতে নতুনটা দিন': 'enter a new one to replace it',
+  'এই পেজ থেকে সেভ করা': 'Saved on this page',
+  'সার্ভারের .env থেকে নেওয়া': "Taken from the server's .env",
+  'অ্যাক্সেস টোকেন (System user)': 'Access token (system user)',
+  'ধাপ ৪ দেখুন। ছোট মেয়াদের টোকেন দিলে App ID ও Secret থাকলে নিজে থেকে ৬০ দিনের টোকেনে বদলে যাবে।':
+    'See step 4. A short-lived token is exchanged for a 60-day one automatically when the App ID and Secret are saved.',
+  'সেভ ও যাচাই করুন': 'Save & check',
+  'কীভাবে সেটআপ করবেন': 'How to set it up',
+  'একবারই করতে হয়': 'Only needed once',
+  'ক্লায়েন্টের অ্যাড অ্যাকাউন্টে এজেন্সির অ্যাক্সেস': "Agency access to the client's ad account",
+  'প্রতিটি ক্লায়েন্ট তার Business Settings → Ad accounts থেকে আমাদের Business Portfolio-কে Partner হিসেবে অ্যাক্সেস দেবে (অথবা অ্যাকাউন্টটি আমাদের Business Manager-এই থাকবে)।':
+    'Each client gives our Business Portfolio partner access from their Business Settings → Ad accounts (or the account lives in our own Business Manager).',
+  'Meta for Developers-এ অ্যাপ তৈরি': 'Create an app on Meta for Developers',
+  '→ Create app → Use case: "Other" → Type: "Business" → এজেন্সির Business Portfolio বেছে নিন।':
+    '→ Create app → Use case: "Other" → Type: "Business" → pick the agency\'s Business Portfolio.',
+  'অ্যাপের ড্যাশবোর্ডে Add product → "Marketing API" যোগ করুন।': 'On the app dashboard, Add product → "Marketing API".',
+  'App ID ও App Secret': 'App ID and App Secret',
+  'App settings → Basic থেকে App ID ও App Secret কপি করে পাশের ফর্মে দিন।': 'Copy the App ID and App Secret from App settings → Basic into the form.',
+  'System user টোকেন (কখনো মেয়াদ শেষ হয় না)': 'System user token (never expires)',
+  '→ Add → Admin রোল।': '→ Add → Admin role.',
+  '"Assign assets" → সব ক্লায়েন্টের অ্যাড অ্যাকাউন্ট বেছে নিন (অন্তত "View performance")। Apps-এ আমাদের অ্যাপটিও অ্যাসাইন করুন।':
+    '"Assign assets" → pick every client ad account (at least "View performance"). Also assign our app under Apps.',
+  '"Generate new token" → অ্যাপ বেছে নিন → Expiration: Never → পারমিশন: ads_read, business_management → টোকেন কপি করে পাশের ফর্মে দিন।':
+    '"Generate new token" → pick the app → Expiration: Never → permissions: ads_read, business_management → paste the token into the form.',
+  'নতুন ক্লায়েন্ট এলে শুধু তার অ্যাড অ্যাকাউন্ট এই System user-কে অ্যাসাইন করুন — টোকেন বদলাতে হবে না।':
+    "For a new client, just assign their ad account to this system user — the token stays the same.",
+  'ক্লায়েন্টের সাথে অ্যাড অ্যাকাউন্ট যুক্ত করুন': 'Link ad accounts to clients',
+  'অ্যাড অ্যাকাউন্ট → Facebook কানেক্ট → "সেভ করা টোকেন দিয়ে লোড করুন" → ক্লায়েন্ট বেছে নিয়ে তার অ্যাকাউন্টগুলো টিক দিন। সাথে সাথে গত ৩০ দিনের ডেটা চলে আসবে।':
+    'Ad accounts → Connect Facebook → "Load with saved token" → pick the client and tick their accounts. The last 30 days of data arrive right away.',
+  '(ঐচ্ছিক) Facebook দিয়ে লগইন বাটন': '(Optional) Log in with Facebook button',
+  'অ্যাপে "Facebook Login for Business" যোগ করে Valid OAuth Redirect URIs-এ এটা দিন:':
+    'Add "Facebook Login for Business" to the app and put this in Valid OAuth Redirect URIs:',
+  'এজেন্সির সেভ করা টোকেন': "Agency's saved token",
+  'Meta সেটআপে সেভ করা System user টোকেন যেসব অ্যাড অ্যাকাউন্ট দেখতে পারে, সব নিচে আসবে।':
+    'Every ad account the system-user token saved in Meta setup can see will be listed below.',
+  'এখনো কোনো টোকেন সেভ করা নেই।': 'No token saved yet.',
+  'সেভ করা টোকেন দিয়ে লোড করুন': 'Load with saved token',
+  'Meta সেটআপ করুন →': 'Set up Meta →',
+  'Meta সেটআপ পেজে App ID ও App Secret দিলে এই বাটন চালু হবে। ততক্ষণ পাশের টোকেন ব্যবহার করুন।':
+    'This button turns on once the App ID and App Secret are saved in Meta setup. Until then, use a token.',
+  'Meta (Facebook) এখনো সেটআপ করা হয়নি — টোকেন ছাড়া কোনো অ্যাকাউন্ট সিঙ্ক হবে না।': 'Meta (Facebook) is not set up yet — no account can sync without a token.',
+  'এখনই সেটআপ করুন': 'Set up now',
+  'অ্যাডমিনকে সেটআপ করতে বলুন': 'Ask an admin to set it up',
+  'Meta সেটআপ পেজে App ID ও App Secret দিন': 'Add the App ID and App Secret on the Meta setup page',
+  'Meta সেটআপে এখনো কোনো অ্যাক্সেস টোকেন সেভ করা হয়নি': 'No access token saved in Meta setup yet',
+  'App ID শুধু সংখ্যা': 'App ID must be digits only',
+
+  // Daily report (client portal)
+  'দিনের রিপোর্ট': 'Daily report',
+  'প্রতিদিন রাত ১২টার পর আগের দিনের পুরো হিসাব এখানে চলে আসে': "Right after midnight every day, the previous day's full numbers land here",
+  'আজ ({d}) — এখন পর্যন্ত': 'Today ({d}) — so far',
+  '{d} — পুরো দিন': '{d} — full day',
+  'আগের দিনের তুলনায়': 'vs. the day before',
+  'এই দিনের কোনো অ্যাড ডেটা নেই।': 'No ad data for this day.',
+  'আজ এখন পর্যন্ত': 'Today so far',
+  '{r} রেজাল্ট · প্রতি রেজাল্ট {c}': '{r} results · {c} per result',
+  'এই দিনের ক্যাম্পেইন': "This day's campaigns",
+  '{n} রেজাল্ট': '{n} results',
+  '{date} এর অ্যাড রিপোর্ট — {client}: খরচ {spend}, রেজাল্ট {results}': 'Ads report for {date} — {client}: spent {spend}, {results} results',
 };

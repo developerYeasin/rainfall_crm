@@ -12,6 +12,7 @@ import { Select } from '@/components/ui/Field.jsx';
 import { Loading, ErrorState, EmptyState } from '@/components/ui/States.jsx';
 import { currency, number, percent, roas, dateLabel } from '@/lib/format.js';
 import { t } from '@/i18n/index.jsx';
+import { DailyReport } from './DailyReport.jsx';
 
 const GROUP_OPTIONS = [
   { value: 'day', label: 'দৈনিক' },
@@ -226,6 +227,8 @@ export const AdsTab = () => {
           <Select className="w-36" value={group} onChange={(e) => setGroup(e.target.value)} options={GROUP_OPTIONS} />
         </div>
       </div>
+
+      <DailyReport clientId={clientId} />
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatTile label="অ্যাড স্পেন্ড" value={currency(totals.spend)} hint={t('{n} ইমপ্রেশন', { n: number(totals.impressions) })} />

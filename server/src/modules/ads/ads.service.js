@@ -7,13 +7,13 @@ import { round, safeDiv } from '../../utils/metrics.js';
 import { addDays, toDateOnly } from '../../utils/date.js';
 import { SOLD_STATUS } from '../../config/constants.js';
 import { normaliseAccountId } from './meta.client.js';
-import { SPEND_WINDOW_SQL, spendFlag } from './ads.sync.js';
+import { dayTotals, reportToday, spendWindowSql, spendFlag } from './ads.sync.js';
 
 const SOLD_SQL = SOLD_STATUS.map((s) => `'${s}'`).join(', ');
 const num = (v) => Number(v || 0);
 
-/** Tokens never leave the server — only whether one is stored. */
-const ACCOUNT_SELECT = `
+/** Tokens never leave the server — only whether one is stored. A function: "yesterday" moves at midnight. */
+const accountSelect = () => `
   SELECT a.id, a.client_id, a.platform, a.external_id, a.name, a.currency, a.result_action, a.daily_budget,
          a.assigned_user_id, a.is_active, a.last_synced_at, a.last_sync_error, a.created_at,
          (a.access_token_enc IS NOT NULL) AS has_token,
@@ -22,7 +22,7 @@ const ACCOUNT_SELECT = `
   FROM ad_accounts a
   JOIN clients c ON c.id = a.client_id
   LEFT JOIN users u ON u.id = a.assigned_user_id
-  LEFT JOIN (${SPEND_WINDOW_SQL}) w ON w.ad_account_id = a.id
+  LEFT JOIN (${spendWindowSql()}) w ON w.ad_account_id = a.id
 `;
 
 const decorateAccount = (a) => {
@@ -76,13 +76,13 @@ export const adsService = {
       ['a.assigned_user_id = ?', filters.assigned_user_id],
     ]);
     const where = andWhere(built.sql, scopeSql('a.client_id', scope));
-    const rows = await query(`${ACCOUNT_SELECT} ${where} ORDER BY c.name, a.name`, built.params);
+    const rows = await query(`${accountSelect()} ${where} ORDER BY c.name, a.name`, built.params);
     return rows.map(decorateAccount);
   },
 
   async getAccount(id, scope = null) {
     const where = andWhere('WHERE a.id = ?', scopeSql('a.client_id', scope));
-    const row = await queryOne(`${ACCOUNT_SELECT} ${where}`, [id]);
+    const row = await queryOne(`${accountSelect()} ${where}`, [id]);
     if (!row) throw ApiError.notFound('অ্যাড অ্যাকাউন্ট পাওয়া যায়নি');
     return decorateAccount(row);
   },
@@ -152,11 +152,40 @@ export const adsService = {
 
   // ---------------------------------------------------------------- client dashboard
   /**
+   * The "how did today / yesterday go" card: today so far, yesterday's full day and the day before
+   * (for the change arrows), plus yesterday's campaigns. Dates follow the reporting zone.
+   */
+  async daily(clientId, date = null) {
+    const today = reportToday();
+    const day = date || addDays(today, -1);
+    const [todayRow, dayRow, prevRow, campaigns, lastSync] = await Promise.all([
+      dayTotals(clientId, today),
+      dayTotals(clientId, day),
+      dayTotals(clientId, addDays(day, -1)),
+      query(
+        `SELECT object_id, MAX(object_name) AS name, SUM(spend) AS spend, SUM(impressions) AS impressions,
+                SUM(clicks) AS clicks, SUM(results) AS results, SUM(purchase_value) AS purchase_value
+         FROM ad_insights WHERE client_id = ? AND level = 'campaign' AND stat_date = ?
+         GROUP BY object_id HAVING spend > 0 ORDER BY spend DESC LIMIT 10`,
+        [clientId, day],
+      ),
+      queryOne('SELECT MAX(last_synced_at) AS at FROM ad_accounts WHERE client_id = ? AND is_active = 1', [clientId]),
+    ]);
+    return {
+      today: todayRow,
+      day: dayRow,
+      previous: prevRow,
+      campaigns: campaigns.map((c) => ({ id: c.object_id, name: c.name, ...withRatios(c) })),
+      last_synced_at: lastSync?.at ?? null,
+    };
+  },
+
+  /**
    * Ads performance for one client over a date range, grouped by day / week / month,
    * with campaign + ad-set breakdown and a side-by-side of ad spend vs. recorded sales.
    */
   async insights(clientId, { from, to, group = 'day' }) {
-    const until = to || toDateOnly(new Date());
+    const until = to || reportToday();
     const since = from || addDays(until, -29);
     const bucket = GROUP_EXPR[group] || GROUP_EXPR.day;
     const orderBucket = ORDER_GROUP_EXPR[group] || ORDER_GROUP_EXPR.day;

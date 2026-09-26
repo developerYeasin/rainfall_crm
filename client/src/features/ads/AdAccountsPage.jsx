@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { adAccountsApi, clientsApi, teamApi } from '@/api/endpoints.js';
+import { adAccountsApi, clientsApi, metaApi, teamApi } from '@/api/endpoints.js';
 import { PageHeader } from '@/components/layout/PageHeader.jsx';
 import { Card } from '@/components/ui/Card.jsx';
 import { Table } from '@/components/ui/Table.jsx';
@@ -154,12 +154,17 @@ export const AdAccountsPage = () => {
   const [flagOnly, setFlagOnly] = useState(false);
   const [params, setParams] = useSearchParams();
   // Facebook sends the browser back here with ?meta_session= (or ?meta_error=).
+  // ?connect=1 comes from the Meta setup page's "connect ad accounts" button.
   const [connecting, setConnecting] = useState(() =>
-    params.get('meta_session') ? { session: params.get('meta_session'), clientId: params.get('client_id') } : null,
+    params.get('meta_session')
+      ? { session: params.get('meta_session'), clientId: params.get('client_id') }
+      : params.get('connect')
+        ? {}
+        : null,
   );
   useEffect(() => {
     if (params.get('meta_error')) toast.error(params.get('meta_error'));
-    if (params.has('meta_session') || params.has('meta_error')) setParams({}, { replace: true });
+    if (params.has('meta_session') || params.has('meta_error') || params.has('connect')) setParams({}, { replace: true });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const { data, isLoading, error, refetch } = useQuery({ queryKey: ['ad-accounts'], queryFn: () => adAccountsApi.list() });
@@ -203,6 +208,8 @@ export const AdAccountsPage = () => {
     onError,
   });
   const team = useQuery({ queryKey: ['team'], queryFn: teamApi.list, enabled: canManage });
+  const meta = useQuery({ queryKey: ['meta'], queryFn: metaApi.get, staleTime: Infinity });
+  const isAdmin = can('admin');
 
   if (isLoading) return <Loading />;
   if (error) return <ErrorState error={error} onRetry={refetch} />;
@@ -329,6 +336,19 @@ export const AdAccountsPage = () => {
           )
         }
       />
+
+      {meta.data && !meta.data.metaToken && (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          <span>{t('Meta (Facebook) এখনো সেটআপ করা হয়নি — টোকেন ছাড়া কোনো অ্যাকাউন্ট সিঙ্ক হবে না।')}</span>
+          {isAdmin ? (
+            <Link to="/settings/meta" className="font-medium underline">
+              {t('এখনই সেটআপ করুন')}
+            </Link>
+          ) : (
+            <span className="text-xs">{t('অ্যাডমিনকে সেটআপ করতে বলুন')}</span>
+          )}
+        </div>
+      )}
 
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <button

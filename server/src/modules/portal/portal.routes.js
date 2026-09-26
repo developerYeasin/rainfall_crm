@@ -36,6 +36,13 @@ router.get(
   asyncHandler(async (req, res) => ok(res, await adsService.insights(req.clientId, req.validatedQuery))),
 );
 
+/** Today so far + one whole day (yesterday by default) with the day before for comparison. */
+router.get(
+  '/ads/daily',
+  validate(z.object({ date: dateStr.optional() }), 'query'),
+  asyncHandler(async (req, res) => ok(res, await adsService.daily(req.clientId, req.validatedQuery.date))),
+);
+
 /** "Refresh now": pulls fresh numbers from the ad platforms (accounts synced in the last 5 minutes are skipped). */
 router.post(
   '/ads/sync',
